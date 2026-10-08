@@ -1,0 +1,28 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Asignua\FilamentKanban\Pages\KanbanBoard;
+use {{ enumClass }};
+use {{ modelClass }};
+
+class {{ class }} extends KanbanBoard
+{
+    protected static string $model = {{ modelBase }}::class;
+
+    protected static string $statusEnum = {{ enumBase }}::class;
+
+    protected static string $recordTitleAttribute = 'title';
+
+    protected static string $recordStatusAttribute = 'status';
+
+    // Persist the manual order of the cards in this column (leave null to keep no order):
+    // protected static ?string $recordSortAttribute = 'position';
+
+    public static function getNavigationLabel(): string
+    {
+        return '{{ label }}';
+    }
+}

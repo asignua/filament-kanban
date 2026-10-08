@@ -19,5 +19,46 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
         });
+
+        Schema::create('tasks', function (Blueprint $table): void {
+            $table->id();
+            $table->string('title');
+            $table->string('status')->default('todo');
+            $table->unsignedInteger('position')->nullable();
+            $table->boolean('locked')->default(false);
+            $table->string('reason')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('tickets', function (Blueprint $table): void {
+            $table->ulid('id')->primary();
+            $table->string('title');
+            $table->string('status')->default('new');
+            $table->unsignedInteger('sort')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('stages', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('color')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('deals', function (Blueprint $table): void {
+            $table->id();
+            $table->string('title');
+            $table->foreignId('stage_id')->constrained('stages');
+            $table->unsignedInteger('sort')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('notes', function (Blueprint $table): void {
+            $table->id();
+            $table->string('title');
+            $table->string('status')->default('open');
+            $table->unsignedInteger('order_column')->nullable();
+            $table->timestamps();
+        });
     }
 };

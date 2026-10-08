@@ -1,7 +1,7 @@
 {
     "name": "asignua/filament-kanban",
-    "description": "TODO: one-sentence description of Kanban for Filament.",
-    "keywords": ["filament", "filament-plugin", "laravel"],
+    "description": "A drag-and-drop Kanban board for Filament 5: enum or database columns, reorder that respects filtered cards, transition modals, authorization, collapsible columns and a migration path from mokhosh/filament-kanban.",
+    "keywords": ["filament", "filament-plugin", "laravel", "kanban", "board", "drag-and-drop", "sortable"],
     "homepage": "https://github.com/asignua/filament-kanban",
     "support": {
         "issues": "https://github.com/asignua/filament-kanban/issues",
@@ -36,7 +36,8 @@
         "psr-4": {
             "Asignua\\FilamentKanban\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/",
-            "Workbench\\Database\\Factories\\": "workbench/database/factories/"
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
         }
     },
     "extra": {
