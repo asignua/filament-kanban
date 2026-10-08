@@ -10,6 +10,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // testbench serve also runs its own default users migration; the workbench owns this table.
+        Schema::dropIfExists('users');
+
         Schema::create('users', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
