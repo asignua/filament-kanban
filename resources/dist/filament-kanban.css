@@ -1,3 +1,6 @@
+/* Pin Tailwind v4 layer order: if this file loads before the panel CSS, a bare `@layer components` would otherwise rank below base (preflight) and unstyle Filament itself. */
+@layer theme, base, components, utilities;
+
 /* Inside a layer so utilities from recordClasses() (bg-danger-50, ring-2...) win over these defaults. */
 @layer components {
 /*
