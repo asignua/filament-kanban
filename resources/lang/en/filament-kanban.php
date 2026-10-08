@@ -11,6 +11,7 @@ return [
     'edit_save' => 'Save',
     'edit_cancel' => 'Cancel',
     'move_denied' => 'You are not allowed to move this card.',
+    'edit_denied' => 'You are not allowed to edit this card.',
     'record_missing' => 'This card no longer exists.',
     'column_unknown' => 'This column no longer exists.',
     'transition_heading' => ':from → :to',

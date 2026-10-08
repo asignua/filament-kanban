@@ -11,6 +11,7 @@ return [
     'edit_save' => 'Enregistrer',
     'edit_cancel' => 'Annuler',
     'move_denied' => 'Vous n\'êtes pas autorisé à déplacer cette carte.',
+    'edit_denied' => 'Vous n\'avez pas le droit de modifier cette carte.',
     'record_missing' => 'Cette carte n\'existe plus.',
     'column_unknown' => 'Cette colonne n\'existe plus.',
     'transition_heading' => ':from → :to',

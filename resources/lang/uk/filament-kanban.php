@@ -11,6 +11,7 @@ return [
     'edit_save' => 'Зберегти',
     'edit_cancel' => 'Скасувати',
     'move_denied' => 'Вам не дозволено переміщувати цю картку.',
+    'edit_denied' => 'Ви не маєте права редагувати цю картку.',
     'record_missing' => 'Цієї картки більше не існує.',
     'column_unknown' => 'Цієї колонки більше не існує.',
     'transition_heading' => ':from → :to',

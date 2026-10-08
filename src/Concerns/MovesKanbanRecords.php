@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Asignua\FilamentKanban\Concerns;
 
 use Asignua\FilamentKanban\Events\KanbanRecordMoved;
+use Asignua\FilamentKanban\Support\KanbanGate;
 use Asignua\FilamentKanban\Support\PositionWriter;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\On;
 
 /**
@@ -125,6 +125,23 @@ trait MovesKanbanRecords
         }
 
         $record->setAttribute(static::$recordStatusAttribute, $column->value);
+
+        // Start at the bottom of the new column: the old column's number means nothing here and could tie with
+        // (or undercut) a hidden card's slot.
+        $sort = $this->effectiveSortAttribute();
+
+        if ($sort !== null) {
+            $query = $this->getEloquentQuery();
+            $model = $query->getModel();
+            $max = $query
+                ->reorder()
+                ->where($model->qualifyColumn(static::$recordStatusAttribute), $column->value)
+                ->where($model->qualifyColumn($model->getKeyName()), '!=', $record->getKey())
+                ->max($model->qualifyColumn($sort));
+
+            $record->setAttribute($sort, (is_numeric($max) ? (int) $max : 0) + 1);
+        }
+
         $record->save();
 
         $this->persistOrder($status, $toOrderedIds);
@@ -148,24 +165,39 @@ trait MovesKanbanRecords
     protected function persistOrder(string $status, array $orderedIds): void
     {
         $column = $this->findColumn($status);
+        $sort = $this->effectiveSortAttribute();
+
+        if ($column === null || $sort === null) {
+            return;
+        }
+
+        $query = $this->getEloquentQuery();
+        $query->where($query->getModel()->qualifyColumn(static::$recordStatusAttribute), $column->value);
+
+        // Ids from the browser are intersected with this column inside PositionWriter: foreign ids are ignored.
+        PositionWriter::apply($query, $sort, $orderedIds);
+    }
+
+    /**
+     * The column that holds the order: `$recordSortAttribute`, else the order column of a spatie/eloquent-sortable model.
+     */
+    protected function effectiveSortAttribute(): ?string
+    {
         $sort = static::sortAttribute();
 
-        if ($column === null) {
-            return;
-        }
-
         if ($sort !== null) {
-            $query = $this->getEloquentQuery();
-            $query->where($query->getModel()->qualifyColumn(static::$recordStatusAttribute), $column->value);
-
-            PositionWriter::apply($query, $sort, $orderedIds);
-
-            return;
+            return $sort;
         }
 
-        if (method_exists(static::kanbanModel(), 'setNewOrder')) {
-            static::kanbanModel()::setNewOrder(array_values(array_filter($orderedIds, 'is_scalar')));
+        $model = static::kanbanModel();
+
+        if (method_exists($model, 'setNewOrder') && method_exists($model, 'determineOrderColumnName')) {
+            $column = (new $model)->determineOrderColumnName();
+
+            return is_string($column) ? $column : null;
         }
+
+        return null;
     }
 
     /**
@@ -174,7 +206,7 @@ trait MovesKanbanRecords
      */
     protected function canMove(Model $record, string $from, string $to): bool
     {
-        return Gate::getPolicyFor($record) === null || Gate::allows('update', $record);
+        return KanbanGate::allows($record);
     }
 
     /**
@@ -239,7 +271,7 @@ trait MovesKanbanRecords
     {
         return Action::make('kanbanTransition')
             ->modalHeading(fn (array $arguments): string => __('filament-kanban::filament-kanban.transition_heading', [
-                'from' => $this->findColumn((string) ($arguments['from'] ?? ''))->title ?? '',
+                'from' => $this->findColumn($this->kanbanRealFrom($arguments))->title ?? '',
                 'to' => $this->findColumn((string) ($arguments['to'] ?? ''))->title ?? '',
             ]))
             ->modalSubmitActionLabel(__('filament-kanban::filament-kanban.transition_submit'))
@@ -249,14 +281,14 @@ trait MovesKanbanRecords
                 $record = $this->kanbanArgumentRecord($arguments);
 
                 /** @var array<int, mixed> $schema */
-                $schema = $record === null ? [] : ($this->transitionSchemaFor($record, (string) ($arguments['from'] ?? ''), (string) ($arguments['to'] ?? '')) ?? []);
+                $schema = $record === null ? [] : ($this->transitionSchemaFor($record, $this->statusOf($record), (string) ($arguments['to'] ?? '')) ?? []);
 
                 return $schema;
             })
             ->fillForm(function (array $arguments): array {
                 $record = $this->kanbanArgumentRecord($arguments);
 
-                return $record === null ? [] : $this->transitionFormDefaults($record, (string) ($arguments['from'] ?? ''), (string) ($arguments['to'] ?? ''));
+                return $record === null ? [] : $this->transitionFormDefaults($record, $this->statusOf($record), (string) ($arguments['to'] ?? ''));
             })
             ->action(function (array $arguments, array $data): void {
                 $record = $this->kanbanArgumentRecord($arguments);
@@ -337,6 +369,18 @@ trait MovesKanbanRecords
         }
 
         return true;
+    }
+
+    /**
+     * The column the card really is in: the `from` argument comes from the browser and is never trusted.
+     *
+     * @param array<string, mixed> $arguments
+     */
+    private function kanbanRealFrom(array $arguments): string
+    {
+        $record = $this->kanbanArgumentRecord($arguments);
+
+        return $record === null ? '' : $this->statusOf($record);
     }
 
     /**

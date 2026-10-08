@@ -11,6 +11,7 @@ return [
     'edit_save' => 'Zapisz',
     'edit_cancel' => 'Anuluj',
     'move_denied' => 'Nie masz uprawnień do przenoszenia tej karty.',
+    'edit_denied' => 'Nie masz uprawnień do edycji tej karty.',
     'record_missing' => 'Ta karta już nie istnieje.',
     'column_unknown' => 'Ta kolumna już nie istnieje.',
     'transition_heading' => ':from → :to',

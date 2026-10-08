@@ -11,6 +11,7 @@ return [
     'edit_save' => 'Salva',
     'edit_cancel' => 'Annulla',
     'move_denied' => 'Non sei autorizzato a spostare questa scheda.',
+    'edit_denied' => 'Non hai il permesso di modificare questa scheda.',
     'record_missing' => 'Questa scheda non esiste più.',
     'column_unknown' => 'Questa colonna non esiste più.',
     'transition_heading' => ':from → :to',

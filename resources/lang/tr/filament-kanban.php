@@ -11,6 +11,7 @@ return [
     'edit_save' => 'Kaydet',
     'edit_cancel' => 'İptal',
     'move_denied' => 'Bu kartı taşımaya yetkiniz yok.',
+    'edit_denied' => 'Bu kartı düzenleme izniniz yok.',
     'record_missing' => 'Bu kart artık mevcut değil.',
     'column_unknown' => 'Bu sütun artık mevcut değil.',
     'transition_heading' => ':from → :to',

@@ -88,8 +88,8 @@ class MovingTest extends TestCase
             ->call('statusChanged', $moved->id, 'doing', [], [$moved->id, $y->id]);
 
         $this->assertSame(TaskStatus::Doing, $moved->fresh()->status);
-        // Column order after the move: moved, Beta (hidden), Alpha too. Beta keeps the middle slot.
-        $this->assertSame([1, 2, 3], [$moved->fresh()->position, $x->fresh()->position, $y->fresh()->position]);
+        // The hidden card keeps the first slot; the visible ones trade the remaining slots (moved above "Alpha too").
+        $this->assertSame([2, 1, 3], [$moved->fresh()->position, $x->fresh()->position, $y->fresh()->position]);
     }
 
     public function test_a_move_fires_an_event_and_a_reorder_does_not(): void
@@ -153,14 +153,13 @@ class MovingTest extends TestCase
 
     public function test_without_a_sort_attribute_the_model_order_hook_is_used(): void
     {
-        Note::$orders = [];
         $a = Note::create(['title' => 'A', 'status' => 'open', 'order_column' => 1]);
         $b = Note::create(['title' => 'B', 'status' => 'open', 'order_column' => 2]);
 
         Livewire::test(NoteBoard::class)
             ->call('sortChanged', $b->id, 'open', [$b->id, $a->id]);
 
-        $this->assertSame([[$b->id, $a->id]], Note::$orders);
-        $this->assertSame(1, $b->fresh()->order_column);
+        // The sortable model's order column is written through the same visible-only writer.
+        $this->assertSame([1, 2], [$b->fresh()->order_column, $a->fresh()->order_column]);
     }
 }

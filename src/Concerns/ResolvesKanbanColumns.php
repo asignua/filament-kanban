@@ -44,6 +44,14 @@ trait ResolvesKanbanColumns
             throw new LogicException(static::class.' needs a status source: set `protected static string $statusEnum` to an enum, or override statuses().');
         }
 
+        // mokhosh reads `$statusEnum::statuses()`, so an enum that shapes its own columns keeps working.
+        if (method_exists(static::$statusEnum, 'statuses')) {
+            /** @var Collection<int, array<string, mixed>> $statuses */
+            $statuses = (static::$statusEnum)::statuses();
+
+            return $statuses;
+        }
+
         return StatusSource::fromEnum(static::$statusEnum);
     }
 

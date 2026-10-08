@@ -22,6 +22,11 @@ class Note extends Model
 
     protected $guarded = [];
 
+    public function determineOrderColumnName(): string
+    {
+        return 'order_column';
+    }
+
     /**
      * @param Builder<Note> $query
      */

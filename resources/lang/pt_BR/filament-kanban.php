@@ -11,6 +11,7 @@ return [
     'edit_save' => 'Salvar',
     'edit_cancel' => 'Cancelar',
     'move_denied' => 'Você não tem permissão para mover este cartão.',
+    'edit_denied' => 'Você não tem permissão para editar este cartão.',
     'record_missing' => 'Este cartão não existe mais.',
     'column_unknown' => 'Esta coluna não existe mais.',
     'transition_heading' => ':from → :to',

@@ -155,7 +155,7 @@ protected function columnTransitionSchema(string $from, string $to): ?array
 
 When the schema is not empty, dropping a card into that column opens a Filament modal instead of moving it. **Confirm** moves
 the card and fills the form data onto the record (`onTransitionConfirmed()`, override it when the fields are not columns).
-**Cancel** closes the modal and the card is back where it was. Need the record in the form? Override
+The card is not moved until you confirm: while the modal is open the board re-renders and shows the card in its original column, and **Confirm** moves it. **Cancel** just closes the modal; nothing changed. Need the record in the form? Override
 `transitionSchemaFor(Model $record, string $from, string $to)` and `transitionFormDefaults(...)`.
 
 ### Who may move what
@@ -164,7 +164,11 @@ the card and fills the form data onto the record (`onTransitionConfirmed()`, ove
   has no policy (like a Filament resource). Denied: a danger notification, the card jumps back. `$from === $to` for a reorder.
 - `validateMove(Model $record, string $from, string $to): ?string` - return a message to refuse a move for a business reason.
 - `isRecordDraggable(Model $record): bool` - lock a card (it cannot be picked up, and a forged request is refused too).
-- `canEditRecord(Model $record): bool` - same for the edit modal.
+- `canEditRecord(Model $record): bool` - same for the edit modal. A board whose cards are links (`recordUrl()`) or that sets `$disableEditModal` exposes no edit action at all.
+- With `->strictAuthorization()` on the panel, a model **without** a policy is refused (move and edit), like a resource.
+- A standalone board checks the model's `viewAny` policy in `canAccess()` (override it for your own rule); for per-row visibility use `modifyRecordsQuery()`.
+- A reorder is authorized for the dragged card only. Other cards of the column are renumbered around it, including locked ones, so
+  a locked card can change its stored position (not its column) when a neighbour is dragged past it.
 
 ### Columns
 

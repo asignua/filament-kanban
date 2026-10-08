@@ -11,6 +11,7 @@ return [
     'edit_save' => 'Guardar',
     'edit_cancel' => 'Cancelar',
     'move_denied' => 'No tienes permiso para mover esta tarjeta.',
+    'edit_denied' => 'No tienes permiso para editar esta tarjeta.',
     'record_missing' => 'Esta tarjeta ya no existe.',
     'column_unknown' => 'Esta columna ya no existe.',
     'transition_heading' => ':from → :to',

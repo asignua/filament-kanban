@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentKanban\Concerns;
 
+use Asignua\FilamentKanban\Support\KanbanGate;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\Locked;
+use ReflectionClass;
 
 /**
  * Clicking a card: either a link (recordUrl()) or an edit modal / slide-over built from a form schema.
@@ -15,6 +17,8 @@ use Illuminate\Support\Facades\Gate;
  */
 trait EditsKanbanRecords
 {
+    /** Locked: the browser must not be able to switch a disabled modal back on. */
+    #[Locked]
     public bool $disableEditModal = false;
 
     protected string $editModalTitle = '';
@@ -36,7 +40,7 @@ trait EditsKanbanRecords
             ->modalSubmitActionLabel($this->getEditModalSaveButtonLabel())
             ->modalCancelActionLabel($this->getEditModalCancelButtonLabel())
             ->record(fn (array $arguments): ?Model => $this->kanbanEditRecord($arguments))
-            ->visible(fn (array $arguments): bool => !$this->disableEditModal && $this->kanbanMayEdit($arguments))
+            ->visible(fn (array $arguments): bool => $this->kanbanMayEdit($arguments))
             ->schema(fn (array $arguments): array => $this->getEditModalFormSchema($this->kanbanRecordId($arguments)))
             ->fillForm(function (array $arguments): array {
                 $id = $this->kanbanRecordId($arguments);
@@ -48,8 +52,14 @@ trait EditsKanbanRecords
                 $id = $this->kanbanRecordId($arguments);
                 $record = $id === null ? null : $this->findRecord($id);
 
-                if ($id === null || $record === null || !$this->kanbanMayEdit($arguments)) {
-                    $this->kanbanNotify(__('filament-kanban::filament-kanban.move_denied'), 'danger');
+                if ($record === null) {
+                    $this->kanbanNotify(__('filament-kanban::filament-kanban.record_missing'), 'warning');
+
+                    return;
+                }
+
+                if (!$this->kanbanMayEdit($arguments)) {
+                    $this->kanbanNotify(__('filament-kanban::filament-kanban.edit_denied'), 'danger');
 
                     return;
                 }
@@ -98,7 +108,7 @@ trait EditsKanbanRecords
      */
     protected function canEditRecord(Model $record): bool
     {
-        return Gate::getPolicyFor($record) === null || Gate::allows('update', $record);
+        return KanbanGate::allows($record);
     }
 
     protected function getEditModalTitle(): string
@@ -153,7 +163,27 @@ trait EditsKanbanRecords
     {
         $record = $this->kanbanEditRecord($arguments);
 
+        if ($this->isEditModalDisabled()) {
+            return false;
+        }
+
         // No record in the arguments yet (Filament resolves the action once while registering it): do not hide it.
-        return $record === null ? !isset($arguments['record']) : $this->canEditRecord($record);
+        if ($record === null) {
+            return !isset($arguments['record']);
+        }
+
+        // A card that is a link has no edit button; the action must not be mountable either.
+        return $this->recordUrl($record) === null && $this->canEditRecord($record);
+    }
+
+    /**
+     * The property OR the class default: a board that declares the modal off stays off even if the browser flips the
+     * (redeclared, hence possibly unlocked) public property.
+     */
+    protected function isEditModalDisabled(): bool
+    {
+        $defaults = (new ReflectionClass(static::class))->getDefaultProperties();
+
+        return $this->disableEditModal || ($defaults['disableEditModal'] ?? false) === true;
     }
 }

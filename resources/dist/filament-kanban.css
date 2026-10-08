@@ -1,3 +1,5 @@
+/* Inside a layer so utilities from recordClasses() (bg-danger-50, ring-2...) win over these defaults. */
+@layer components {
 /*
  * Filament Kanban. Hand-written, no build step; everything is under .fi-kanban* so it cannot touch the host theme.
  * Colours come from Filament's own variables (--gray-*, --primary-*, and --color-* set by the panel's .fi-color-* classes).
@@ -266,4 +268,5 @@ body.fi-kanban-grabbing * {
     .fi-kanban-column--collapsed {
         flex-basis: 4rem;
     }
+}
 }

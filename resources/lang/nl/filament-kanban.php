@@ -11,6 +11,7 @@ return [
     'edit_save' => 'Opslaan',
     'edit_cancel' => 'Annuleren',
     'move_denied' => 'Je mag deze kaart niet verplaatsen.',
+    'edit_denied' => 'Je mag deze kaart niet bewerken.',
     'record_missing' => 'Deze kaart bestaat niet meer.',
     'column_unknown' => 'Deze kolom bestaat niet meer.',
     'transition_heading' => ':from → :to',
