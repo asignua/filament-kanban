@@ -23,6 +23,9 @@ use Livewire\Attributes\On;
  */
 trait MovesKanbanRecords
 {
+    /** @var array<string, mixed> Answers of the transition modal while a move is being written. */
+    protected array $kanbanTransitionData = [];
+
     /**
      * A card was dropped into another column (or into the same one: then it is a reorder).
      *
@@ -327,22 +330,55 @@ trait MovesKanbanRecords
     {
         $key = $record->getKey();
 
-        DB::transaction(function () use ($key, $from, $to, $fromOrderedIds, $toOrderedIds, $data): void {
-            $this->onStatusChanged($key, $to, $fromOrderedIds, $toOrderedIds);
+        $previous = $this->kanbanTransitionData;
+        $this->kanbanTransitionData = $data;
 
-            if ($data !== []) {
-                $fresh = $this->findRecord($key);
-
-                if ($fresh !== null) {
-                    $this->onTransitionConfirmed($fresh, $from, $to, $data);
-                }
-            }
-        });
+        try {
+            DB::transaction(function () use ($key, $from, $to, $fromOrderedIds, $toOrderedIds, $data): void {
+                $this->onRecordTransitioned($key, $from, $to, $fromOrderedIds, $toOrderedIds, $data);
+            });
+        } finally {
+            $this->kanbanTransitionData = $previous;
+        }
 
         $moved = $this->findRecord($key) ?? $record;
 
         event(new KanbanRecordMoved($moved, $from, $to, static::class, $data));
         $this->onRecordMoved($moved, $from, $to, $data);
+    }
+
+    /**
+     * The single write hook of a move, called inside the move's transaction after canMove()/validateMove() passed.
+     * `$data` holds the transition modal's answers ([] for a plain drag). Default: onStatusChanged() (status + order),
+     * then onTransitionConfirmed() when there are answers. Override it when ONE write service needs the move and the
+     * answers in the same call; the existing hooks keep working untouched.
+     *
+     * @param array<int, mixed>    $fromOrderedIds
+     * @param array<int, mixed>    $toOrderedIds
+     * @param array<string, mixed> $data
+     */
+    protected function onRecordTransitioned(int|string $recordId, string $from, string $to, array $fromOrderedIds, array $toOrderedIds, array $data): void
+    {
+        $this->onStatusChanged($recordId, $to, $fromOrderedIds, $toOrderedIds);
+
+        if ($data !== []) {
+            $fresh = $this->findRecord($recordId);
+
+            if ($fresh !== null) {
+                $this->onTransitionConfirmed($fresh, $from, $to, $data);
+            }
+        }
+    }
+
+    /**
+     * The transition modal's answers while a move is being written (also readable from onStatusChanged());
+     * [] outside a move and for a plain drag.
+     *
+     * @return array<string, mixed>
+     */
+    protected function currentTransitionData(): array
+    {
+        return $this->kanbanTransitionData;
     }
 
     /**

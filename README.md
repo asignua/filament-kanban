@@ -155,6 +155,7 @@ protected function columnTransitionSchema(string $from, string $to): ?array
 
 When the schema is not empty, dropping a card into that column opens a Filament modal instead of moving it. **Confirm** moves
 the card and fills the form data onto the record (`onTransitionConfirmed()`, override it when the fields are not columns).
+Need the answers in the same call that writes the move (e.g. one service method taking stage + lost reason)? Override `onRecordTransitioned($recordId, $from, $to, $fromIds, $toIds, array $data)` - it runs in the move's transaction, its default calls `onStatusChanged()` then `onTransitionConfirmed()`; or read `currentTransitionData()` inside `onStatusChanged()`.
 The card is not moved until you confirm: while the modal is open the board re-renders and shows the card in its original column, and **Confirm** moves it. **Cancel** just closes the modal; nothing changed. Need the record in the form? Override
 `transitionSchemaFor(Model $record, string $from, string $to)` and `transitionFormDefaults(...)`.
 

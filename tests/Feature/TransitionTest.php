@@ -6,8 +6,10 @@ namespace Asignua\FilamentKanban\Tests\Feature;
 
 use Asignua\FilamentKanban\Events\KanbanRecordMoved;
 use Asignua\FilamentKanban\Tests\TestCase;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 use Livewire\Livewire;
+use RuntimeException;
 use Workbench\App\Enums\TaskStatus;
 use Workbench\App\Filament\Pages\TaskBoard;
 use Workbench\App\Models\Task;
@@ -86,6 +88,58 @@ class TransitionTest extends TestCase
         $task->forceFill(['locked' => true])->save();
 
         $test->setActionData(['reason' => 'late'])->callMountedAction();
+
+        $this->assertSame(TaskStatus::Doing, $task->fresh()->status);
+    }
+
+    public function test_the_move_hook_receives_the_modal_data_in_the_same_call(): void
+    {
+        $board = new class extends TaskBoard
+        {
+            public static array $seen = [];
+
+            protected function onRecordTransitioned(int|string $recordId, string $from, string $to, array $fromOrderedIds, array $toOrderedIds, array $data): void
+            {
+                self::$seen = ['data' => $data, 'inStatus' => null];
+                parent::onRecordTransitioned($recordId, $from, $to, $fromOrderedIds, $toOrderedIds, $data);
+            }
+
+            protected function onStatusChanged(int|string $recordId, string $status, array $fromOrderedIds, array $toOrderedIds): void
+            {
+                self::$seen['inStatus'] = $this->currentTransitionData();
+                parent::onStatusChanged($recordId, $status, $fromOrderedIds, $toOrderedIds);
+            }
+        };
+
+        $task = Task::create(['title' => 'A', 'status' => 'doing', 'position' => 1]);
+
+        Livewire::test($board::class)
+            ->call('statusChanged', $task->id, 'done', [], [$task->id])
+            ->setActionData(['reason' => 'shipped'])->callMountedAction();
+
+        $this->assertSame(['reason' => 'shipped'], $board::$seen['data']);
+        $this->assertSame(['reason' => 'shipped'], $board::$seen['inStatus']);
+        $this->assertSame('shipped', $task->fresh()->reason);
+    }
+
+    public function test_a_throwing_data_write_rolls_the_move_back(): void
+    {
+        $board = new class extends TaskBoard
+        {
+            protected function onTransitionConfirmed(Model $record, string $from, string $to, array $data): void
+            {
+                throw new RuntimeException('boom');
+            }
+        };
+
+        $task = Task::create(['title' => 'A', 'status' => 'doing', 'position' => 1]);
+
+        try {
+            Livewire::test($board::class)
+                ->call('statusChanged', $task->id, 'done', [], [$task->id])
+                ->setActionData(['reason' => 'shipped'])->callMountedAction();
+        } catch (RuntimeException) {
+        }
 
         $this->assertSame(TaskStatus::Doing, $task->fresh()->status);
     }

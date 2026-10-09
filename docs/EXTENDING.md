@@ -61,7 +61,7 @@ Order of events for a drop into another column:
 3. `validateMove($record, $from, $to): ?string` - **before-move validation**: return a message to refuse, `null` to allow
    (transition rules, WIP limits).
 4. `transitionSchemaFor()` -> `columnTransitionSchema($from, $to)`: fields to ask for, or `null`.
-5. In one transaction: `onStatusChanged()` (status + order), then `onTransitionConfirmed()` when a form was shown.
+5. In one transaction: `onRecordTransitioned($recordId, $from, $to, $fromIds, $toIds, $data)`. Its default calls `onStatusChanged()` (status + order), then `onTransitionConfirmed()` when a form was shown. Override it when one write service needs the move and the modal's answers in the same call (`$data` is `[]` for a plain drag); `currentTransitionData()` returns the same answers inside `onStatusChanged()` too. Everything runs in one transaction, so a throw rolls back the move and the data.
 6. After commit: the `Events\KanbanRecordMoved` event and `onRecordMoved($record, $from, $to, $data)`.
 
 A reorder inside a column goes through `isRecordDraggable()`, `canMove($record, $s, $s)` and `onSortChanged()`.
