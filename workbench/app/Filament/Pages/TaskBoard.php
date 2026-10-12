@@ -44,6 +44,10 @@ class TaskBoard extends KanbanBoard
 
     protected function columnHeaderExtras(KanbanColumn $column): array
     {
-        return ['limit '.$column->id];
+        return match ($column->id) {
+            'todo' => ['limit 6'],
+            'doing' => ['limit 3'],
+            default => [],
+        };
     }
 }

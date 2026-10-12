@@ -1,5 +1,7 @@
 # Filament Kanban
 
+<img class="filament-hidden" src="https://raw.githubusercontent.com/asignua/filament-kanban/v1.0.1/art/cover.jpg" alt="Filament Kanban">
+
 [![Tests](https://img.shields.io/github/actions/workflow/status/asignua/filament-kanban/tests.yml?branch=main&label=tests)](https://github.com/asignua/filament-kanban/actions/workflows/tests.yml)
 
 A drag-and-drop Kanban board for Filament 5. Columns come from an enum or from database rows, cards are any Eloquent model
@@ -13,8 +15,17 @@ namespaced (`.fi-kanban*`) and uses Filament's own colour variables, so it follo
 
 ## Screenshots
 
-TODO: add images to `art/` (cover.jpg first), then reference them here: the board, a collapsed column, the transition
-modal, the mobile view, dark mode.
+A board with enum columns, a search box, a locked card with its badge and a folded "Done" column:
+
+![A Kanban board with three columns, a locked card and a collapsed Done column](https://raw.githubusercontent.com/asignua/filament-kanban/v1.0.1/art/board.jpg)
+
+Moving a card can ask a question first (a lost reason, a comment) before it is saved:
+
+![The transition modal asking for a reason when a card moves to Done](https://raw.githubusercontent.com/asignua/filament-kanban/v1.0.1/art/transition.jpg)
+
+Dark mode follows the panel:
+
+![The same board in dark mode](https://raw.githubusercontent.com/asignua/filament-kanban/v1.0.1/art/board-dark.jpg)
 
 ## Requirements
 

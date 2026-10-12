@@ -65,7 +65,7 @@ class RenderingTest extends TestCase
         Livewire::test(TaskBoard::class)
             ->assertSeeHtml('data-locked="true"')
             ->assertSee('Locked')
-            ->assertSee('limit todo')
+            ->assertSee('limit 6')
             ->assertSee(__('filament-kanban::filament-kanban.card_locked'));
     }
 

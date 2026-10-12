@@ -2,6 +2,10 @@
 
 All notable changes to `asignua/filament-kanban` are documented here.
 
+## v1.0.1 - unreleased
+
+- Docs: screenshots, cover and a workbench demo.
+
 ## v1.0.0 - unreleased
 
 First release.

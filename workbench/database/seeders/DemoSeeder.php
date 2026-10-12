@@ -16,14 +16,14 @@ class DemoSeeder extends Seeder
         User::query()->firstOrCreate(['email' => 'emma@example.com'], ['name' => 'Emma', 'password' => 'password', 'is_active' => true]);
 
         $titles = [
-            'todo' => ['Write the README', 'Draw the cover', 'Pick a licence'],
-            'doing' => ['Port the reorder algorithm', 'Review the extension points'],
-            'done' => ['Scaffold the plugin'],
+            'todo' => ['Write the onboarding guide', 'Design the invoice template', 'Pick a licence for the SDK', 'Plan the Q4 roadmap', 'Audit third-party scripts'],
+            'doing' => ['Migrate the billing webhooks', 'Review the extension points', 'Speed up the dashboard queries'],
+            'done' => ['Scaffold the plugin', 'Set up CI', 'Publish the first beta', 'Fix the timezone bug'],
         ];
 
         foreach ($titles as $status => $list) {
             foreach ($list as $index => $title) {
-                Task::query()->create(['title' => $title, 'status' => $status, 'position' => $index + 1, 'locked' => $title === 'Pick a licence']);
+                Task::query()->create(['title' => $title, 'status' => $status, 'position' => $index + 1, 'locked' => $title === 'Pick a licence for the SDK']);
             }
         }
 
