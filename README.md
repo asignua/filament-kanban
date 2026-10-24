@@ -1,5 +1,7 @@
 # Filament Kanban
 
+[![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
+
 <img class="filament-hidden" src="https://raw.githubusercontent.com/asignua/filament-kanban/v1.0.1/art/cover.jpg" alt="Filament Kanban">
 
 [![Tests](https://img.shields.io/github/actions/workflow/status/asignua/filament-kanban/tests.yml?branch=main&label=tests)](https://github.com/asignua/filament-kanban/actions/workflows/tests.yml)
