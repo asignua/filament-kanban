@@ -17,4 +17,6 @@ return [
     'transition_heading' => ':from → :to',
     'transition_submit' => 'Sposta',
     'card_locked' => 'Questa scheda è bloccata e non può essere spostata.',
+    'show_more' => 'Mostra altre :count',
+    'hidden_count' => '(:hidden nascoste)',
 ];

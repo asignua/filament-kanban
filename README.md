@@ -22,6 +22,7 @@ namespaced (`.fi-kanban*`) and uses Filament's own colour variables, so it follo
 | Board from an enum or from database rows, any Eloquent model (int / UUID / ULID) | ✓ | ✓ |
 | Drag and drop that keeps the places of cards hidden by search or filters | ✓ | ✓ |
 | Ask before a move (modal fields), policy and `canMove()` authorization | ✓ | ✓ |
+| Lazy columns: load more cards per column (opt-in) | ✓ | ✓ |
 | Search box, foldable columns, edit modal, events, mokhosh-compatible API | ✓ | ✓ |
 | Swimlanes (by owner, priority, any attribute) | | ✓ |
 | WIP limits, soft or hard | | ✓ |
@@ -209,6 +210,39 @@ All columns can be folded with the button in the header; a folded column is a na
 some at start with `protected array $collapsedStatuses = ['done']` (or `'collapsed' => true` in a status array). The choice is
 remembered per browser. Turn the button off with `protected bool $collapsibleColumns = false`. An empty column shows a drop
 hint. On a phone the columns scroll horizontally and snap.
+
+### Lazy columns
+
+A column with hundreds of cards (a CRM's "Won" and "Lost") does not have to load them all. Opt in with a page size:
+
+```php
+protected ?int $recordsPerColumn = 25;
+```
+
+Each column then loads its first 25 cards and ends with a **Show 25 more** button. The header badge keeps showing the
+column's **total** (with the search applied), not the number on screen. To page only some columns, override the method
+(null = that column loads everything):
+
+```php
+protected function recordsPerColumn(KanbanColumn $column): ?int
+{
+    return in_array($column->id, ['won', 'lost'], true) ? 25 : null;
+}
+```
+
+Good to know:
+
+- Default is `null`: every card is loaded, with exactly the old queries.
+- The cards of a lazy column come from the same query as before (`getEloquentQuery()` > search > `modifyRecordsQuery()`),
+  with `where status = column` and a `limit`; the totals are one grouped `count(*)`. No window functions, so it runs on
+  MySQL, MariaDB, PostgreSQL and SQLite.
+- Dragging works as with a search: cards that are not loaded keep their places. A card dropped into a lazy column is
+  placed among the loaded cards (the unloaded tail moves one place down) and the column's page grows by one, so nothing
+  that was on screen disappears.
+- **Overriding `records()` switches lazy columns off**: that method returns every card at once, so there is nothing to
+  cut a page from. Use `modifyRecordsQuery()` / `recordRelations()` for narrowing instead.
+- An add-on that sums or counts a column must use `$column->total()` / `columnRecordsQuery($column)`, not the loaded
+  `$column->records`.
 
 ### Cards
 

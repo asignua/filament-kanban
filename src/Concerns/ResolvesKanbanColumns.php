@@ -7,9 +7,12 @@ namespace Asignua\FilamentKanban\Concerns;
 use Asignua\FilamentKanban\Support\KanbanColumn;
 use Asignua\FilamentKanban\Support\StatusSource;
 use BackedEnum;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use LogicException;
+use ReflectionClass;
+use ReflectionMethod;
 use UnitEnum;
 
 /**
@@ -80,6 +83,10 @@ trait ResolvesKanbanColumns
      */
     protected function columns(): Collection
     {
+        if ($this->usesLazyColumns()) {
+            return $this->decorateColumns($this->lazyColumns());
+        }
+
         $grouped = $this->records()->groupBy(fn (Model $record): string => $this->statusOf($record));
 
         return $this->decorateColumns(
@@ -89,6 +96,154 @@ trait ResolvesKanbanColumns
                 ),
             ),
         );
+    }
+
+    /**
+     * Cards per page of a column, or null when it loads all of them. Always null on a board that overrides records():
+     * that method returns every card at once, so there is nothing to page.
+     */
+    public function columnPageSize(KanbanColumn $column): ?int
+    {
+        if ($this->recordsIsOverridden()) {
+            return null;
+        }
+
+        $size = $this->recordsPerColumn($column);
+
+        return $size === null ? null : max(1, $size);
+    }
+
+    /**
+     * How many cards of the column are loaded now: its page size, or more once "Show more" or a drop extended it.
+     */
+    protected function loadedLimitOf(KanbanColumn $column): ?int
+    {
+        $page = $this->columnPageSize($column);
+
+        return $page === null ? null : max($page, (int) ($this->kanbanColumnLimits[$column->id] ?? 0));
+    }
+
+    /**
+     * "Show more" of one lazy column: one more page. A column that does not paginate, or does not exist, is refused.
+     */
+    public function loadMoreRecords(string $columnId): void
+    {
+        $column = $this->findColumn($columnId);
+
+        if ($column === null) {
+            $this->kanbanNotify(__('filament-kanban::filament-kanban.column_unknown'), 'danger');
+
+            return;
+        }
+
+        $page = $this->columnPageSize($column);
+
+        if ($page === null) {
+            return;
+        }
+
+        $this->kanbanColumnLimits[$column->id] = ($this->loadedLimitOf($column) ?? $page) + $page;
+    }
+
+    /**
+     * The filtered, ordered query of one column's cards, without a limit. The base for the loaded page, for
+     * its total and for add-on aggregates over the whole column (sums).
+     *
+     * @return Builder<Model>
+     */
+    protected function columnRecordsQuery(KanbanColumn $column): Builder
+    {
+        $query = $this->filteredRecordsQuery();
+
+        return $query->where($query->getModel()->qualifyColumn(static::$recordStatusAttribute), $this->statusScalar($column));
+    }
+
+    private function usesLazyColumns(): bool
+    {
+        return $this->columnDefinitions()->contains(fn (KanbanColumn $column): bool => $this->columnPageSize($column) !== null);
+    }
+
+    /**
+     * A subclass that overrides records() builds the cards by hand, so no page can be cut from them. The trait
+     * method's own file tells whether it was replaced.
+     */
+    private function recordsIsOverridden(): bool
+    {
+        return (new ReflectionMethod($this, 'records'))->getFileName() !== (new ReflectionClass(QueriesKanbanRecords::class))->getFileName();
+    }
+
+    /**
+     * Columns of a board with lazy columns: one query per lazy column (a page of cards), one grouped count for all the
+     * totals, and one query for every column that is not lazy. The same filtered query feeds all of them, so the badge,
+     * the page and the search always agree. Only plain `where status = value` and `limit` are used (no window functions),
+     * so it behaves the same on MySQL, MariaDB, PostgreSQL and SQLite.
+     *
+     * @return Collection<int, KanbanColumn>
+     */
+    private function lazyColumns(): Collection
+    {
+        $definitions = $this->columnDefinitions();
+        $totals = $this->lazyColumnTotals();
+
+        $plain = $definitions->filter(fn (KanbanColumn $column): bool => $this->columnPageSize($column) === null);
+        $plainRecords = collect();
+
+        if ($plain->isNotEmpty()) {
+            $query = $this->filteredRecordsQuery();
+            $query->whereIn(
+                $query->getModel()->qualifyColumn(static::$recordStatusAttribute),
+                $plain->map(fn (KanbanColumn $column): int|string => $this->statusScalar($column))->values()->all(),
+            );
+
+            $plainRecords = $this->orderedRecordsQuery($query)->get()->groupBy(fn (Model $record): string => $this->statusOf($record));
+        }
+
+        return $definitions->map(function (KanbanColumn $column) use ($totals, $plainRecords): KanbanColumn {
+            $limit = $this->loadedLimitOf($column);
+
+            if ($limit === null) {
+                return $column->withRecords(($plainRecords->get($column->id) ?? collect())->values());
+            }
+
+            $records = $this->orderedRecordsQuery($this->columnRecordsQuery($column))->limit($limit)->get();
+
+            return $column->withRecords($records)->withTotal($totals[(string) $this->statusScalar($column)] ?? 0);
+        })->values();
+    }
+
+    /**
+     * @return array<string, int> raw status value => cards matching the search and filters, one grouped query
+     */
+    private function lazyColumnTotals(): array
+    {
+        $query = $this->filteredRecordsQuery()->reorder();
+        $status = $query->getModel()->qualifyColumn(static::$recordStatusAttribute);
+
+        $counts = [];
+
+        foreach ($query->toBase()->select($status.' as kanban_status')->selectRaw('count(*) as kanban_total')->groupBy($status)->get() as $row) {
+            $value = $row->kanban_status ?? '';
+            $total = $row->kanban_total ?? 0;
+            $counts[is_scalar($value) ? (string) $value : ''] = is_numeric($total) ? (int) $total : 0;
+        }
+
+        return $counts;
+    }
+
+    /**
+     * The value a column stores in the status attribute, as something a query binding takes.
+     */
+    protected function statusScalar(KanbanColumn $column): int|string
+    {
+        $value = $column->value;
+
+        return match (true) {
+            $value instanceof BackedEnum => $value->value,
+            $value instanceof UnitEnum => $value->name,
+            is_int($value) => $value,
+            is_scalar($value) => (string) $value,
+            default => '',
+        };
     }
 
     /**

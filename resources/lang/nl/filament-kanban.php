@@ -17,4 +17,6 @@ return [
     'transition_heading' => ':from → :to',
     'transition_submit' => 'Verplaatsen',
     'card_locked' => 'Deze kaart is vergrendeld en kan niet worden verplaatst.',
+    'show_more' => 'Toon nog :count',
+    'hidden_count' => '(:hidden verborgen)',
 ];

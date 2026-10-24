@@ -17,4 +17,6 @@ return [
     'transition_heading' => ':from → :to',
     'transition_submit' => 'Move',
     'card_locked' => 'This card is locked and cannot be moved.',
+    'show_more' => 'Show :count more',
+    'hidden_count' => '(:hidden hidden)',
 ];

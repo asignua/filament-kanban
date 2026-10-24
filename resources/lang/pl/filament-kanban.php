@@ -17,4 +17,6 @@ return [
     'transition_heading' => ':from → :to',
     'transition_submit' => 'Przenieś',
     'card_locked' => 'Ta karta jest zablokowana i nie można jej przenieść.',
+    'show_more' => 'Pokaż jeszcze :count',
+    'hidden_count' => '(ukrytych: :hidden)',
 ];

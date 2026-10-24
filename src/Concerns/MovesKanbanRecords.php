@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Asignua\FilamentKanban\Concerns;
 
 use Asignua\FilamentKanban\Events\KanbanRecordMoved;
+use Asignua\FilamentKanban\Support\KanbanColumn;
 use Asignua\FilamentKanban\Support\KanbanGate;
 use Asignua\FilamentKanban\Support\PositionWriter;
 use Filament\Actions\Action;
@@ -142,12 +143,67 @@ trait MovesKanbanRecords
                 ->where($model->qualifyColumn($model->getKeyName()), '!=', $record->getKey())
                 ->max($model->qualifyColumn($sort));
 
-            $record->setAttribute($sort, (is_numeric($max) ? (int) $max : 0) + 1);
+            $position = (is_numeric($max) ? (int) $max : 0) + 1;
+
+            // Lazy column: the cards that are not loaded form the tail of the column, so the dropped card must land
+            // among the loaded ones. Open a gap right after the last loaded card (pushing the tail one place down)
+            // instead of starting at the bottom, where it would trade slots with the loaded cards and send the last
+            // of them behind the unloaded tail.
+            if ($this->columnPageSize($column) !== null) {
+                $position = $this->openGapAfterLoaded($column, $record, $sort, $toOrderedIds) ?? $position;
+            }
+
+            $record->setAttribute($sort, $position);
         }
 
         $record->save();
 
         $this->persistOrder($status, $toOrderedIds);
+    }
+
+    /**
+     * Makes room for a card dropped into a lazy column: moves every card positioned after the last loaded card one
+     * place down and returns the free position right after it. Null = nothing to anchor on (no loaded card named).
+     *
+     * @param array<int, mixed> $loadedIds Keys of the loaded cards of the column as the browser saw them.
+     */
+    private function openGapAfterLoaded(KanbanColumn $column, Model $moved, string $sort, array $loadedIds): ?int
+    {
+        $query = $this->getEloquentQuery();
+        $model = $query->getModel();
+        $key = $model->qualifyColumn($model->getKeyName());
+        $sortColumn = $model->qualifyColumn($sort);
+
+        $others = array_values(array_filter(
+            $loadedIds,
+            static fn (mixed $id): bool => (is_int($id) || is_string($id)) && (string) $id !== (string) $moved->getKey(),
+        ));
+
+        if ($others === []) {
+            return null;
+        }
+
+        $last = (clone $query)
+            ->reorder()
+            ->where($model->qualifyColumn(static::$recordStatusAttribute), $this->statusScalar($column))
+            ->whereIn($key, $others)
+            ->max($sortColumn);
+
+        if (!is_numeric($last)) {
+            return null;
+        }
+
+        $last = (int) $last;
+
+        $query
+            ->reorder()
+            ->where($model->qualifyColumn(static::$recordStatusAttribute), $this->statusScalar($column))
+            ->where($key, '!=', $moved->getKey())
+            ->where($sortColumn, '>', $last)
+            ->toBase()
+            ->increment($sort);
+
+        return $last + 1;
     }
 
     /**
@@ -341,6 +397,8 @@ trait MovesKanbanRecords
             $this->kanbanTransitionData = $previous;
         }
 
+        $this->extendLazyColumnAfterDrop($to);
+
         $moved = $this->findRecord($key) ?? $record;
 
         event(new KanbanRecordMoved($moved, $from, $to, static::class, $data));
@@ -387,6 +445,20 @@ trait MovesKanbanRecords
      * @param array<string, mixed> $data
      */
     protected function onRecordMoved(Model $record, string $from, string $to, array $data): void {}
+
+    /**
+     * A card dropped into a lazy column takes one place of the loaded page; widen the page by one so that no card
+     * that was on screen disappears behind "Show more".
+     */
+    private function extendLazyColumnAfterDrop(string $to): void
+    {
+        $column = $this->findColumn($to);
+        $limit = $column === null ? null : $this->loadedLimitOf($column);
+
+        if ($column !== null && $limit !== null) {
+            $this->kanbanColumnLimits[$column->id] = $limit + 1;
+        }
+    }
 
     private function guardMove(Model $record, string $from, string $to): bool
     {

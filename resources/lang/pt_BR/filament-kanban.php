@@ -17,4 +17,6 @@ return [
     'transition_heading' => ':from → :to',
     'transition_submit' => 'Mover',
     'card_locked' => 'Este cartão está bloqueado e não pode ser movido.',
+    'show_more' => 'Mostrar mais :count',
+    'hidden_count' => '(:hidden ocultos)',
 ];

@@ -17,4 +17,6 @@ return [
     'transition_heading' => ':from → :to',
     'transition_submit' => 'Déplacer',
     'card_locked' => 'Cette carte est verrouillée et ne peut pas être déplacée.',
+    'show_more' => 'Afficher :count de plus',
+    'hidden_count' => '(:hidden masquées)',
 ];

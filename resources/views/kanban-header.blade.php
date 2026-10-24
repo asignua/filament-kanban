@@ -5,7 +5,7 @@
 
     <h3 class="fi-kanban-title">{{ $column->title }}</h3>
 
-    <x-filament::badge size="sm" :color="$column->colorName() ?? 'gray'">{{ $column->records->count() }}</x-filament::badge>
+    <x-filament::badge size="sm" :color="$column->colorName() ?? 'gray'">{{ $column->total() }}</x-filament::badge>
 
     {!! $this->renderKanbanSlot($this->columnHeaderExtras($column)) !!}
 

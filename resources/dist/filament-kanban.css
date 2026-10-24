@@ -237,6 +237,51 @@ body.fi-kanban-grabbing * {
     display: block;
 }
 
+/* Lazy columns: the "show more" button under the loaded cards. */
+.fi-kanban-more {
+    margin-top: 0.5rem;
+}
+
+.fi-kanban-more-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px dashed var(--kanban-border);
+    border-radius: 0.5rem;
+    background: transparent;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: inherit;
+    cursor: pointer;
+}
+
+.fi-kanban-more-button:hover,
+.fi-kanban-more-button:focus-visible {
+    background: color-mix(in oklab, var(--primary-500) 8%, transparent);
+}
+
+.fi-kanban-more-button[disabled] {
+    cursor: progress;
+    opacity: 0.7;
+}
+
+.fi-kanban-more-hidden {
+    font-weight: 400;
+    color: var(--kanban-muted);
+}
+
+.fi-kanban-more-spinner {
+    width: 1rem;
+    height: 1rem;
+}
+
+.fi-kanban-column--collapsed .fi-kanban-more {
+    display: none;
+}
+
 /*
  * A folded column is a narrow strip with the title running down it. It stays a drop zone: only the ghost of the card
  * being dragged is shown inside it.

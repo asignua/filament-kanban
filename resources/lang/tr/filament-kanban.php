@@ -17,4 +17,6 @@ return [
     'transition_heading' => ':from → :to',
     'transition_submit' => 'Taşı',
     'card_locked' => 'Bu kart kilitli ve taşınamaz.',
+    'show_more' => ':count tane daha göster',
+    'hidden_count' => '(:hidden gizli)',
 ];

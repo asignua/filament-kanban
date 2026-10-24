@@ -26,6 +26,8 @@ final readonly class KanbanColumn implements ArrayAccess
      * @param Collection<int, Model>                $records
      * @param array<int|string, string>|string|null $color
      * @param array<string, mixed>                  $meta    Free room for add-ons (WIP limit, swimlane key, summaries...).
+     * @param int|null                              $total   Cards the column really holds (search and filters applied) when
+     *                                                       `$records` is only a loaded page of them (lazy columns); null = `$records` is all.
      */
     public function __construct(
         public string $id,
@@ -36,6 +38,7 @@ final readonly class KanbanColumn implements ArrayAccess
         public bool $collapsed = false,
         public Collection $records = new EloquentCollection,
         public array $meta = [],
+        public ?int $total = null,
     ) {}
 
     /**
@@ -72,7 +75,7 @@ final readonly class KanbanColumn implements ArrayAccess
      */
     public function withRecords(Collection $records): self
     {
-        return new self($this->id, $this->title, $this->value, $this->color, $this->icon, $this->collapsed, $records, $this->meta);
+        return new self($this->id, $this->title, $this->value, $this->color, $this->icon, $this->collapsed, $records, $this->meta, $this->total);
     }
 
     /**
@@ -80,12 +83,47 @@ final readonly class KanbanColumn implements ArrayAccess
      */
     public function withMeta(array $meta): self
     {
-        return new self($this->id, $this->title, $this->value, $this->color, $this->icon, $this->collapsed, $this->records, [...$this->meta, ...$meta]);
+        return new self($this->id, $this->title, $this->value, $this->color, $this->icon, $this->collapsed, $this->records, [...$this->meta, ...$meta], $this->total);
     }
 
+    /**
+     * The cards of this column that are loaded (and drawn) now.
+     */
     public function count(): int
     {
         return $this->records->count();
+    }
+
+    /**
+     * Same column, told how many cards it holds in total (lazy columns: more than the loaded page).
+     */
+    public function withTotal(?int $total): self
+    {
+        return new self($this->id, $this->title, $this->value, $this->color, $this->icon, $this->collapsed, $this->records, $this->meta, $total);
+    }
+
+    /**
+     * Whether only a part of the column was loaded (a lazy column with a "show more" button).
+     */
+    public function isPaginated(): bool
+    {
+        return $this->total !== null;
+    }
+
+    /**
+     * All cards of the column, not only the loaded ones: what a header counter must show.
+     */
+    public function total(): int
+    {
+        return max($this->total ?? 0, $this->records->count());
+    }
+
+    /**
+     * Cards that exist in the column but are not loaded yet.
+     */
+    public function hiddenCount(): int
+    {
+        return max(0, $this->total() - $this->records->count());
     }
 
     /**
@@ -98,7 +136,7 @@ final readonly class KanbanColumn implements ArrayAccess
 
     public function offsetExists(mixed $offset): bool
     {
-        return in_array($offset, ['id', 'title', 'value', 'color', 'icon', 'collapsed', 'records', 'meta'], true);
+        return in_array($offset, ['id', 'title', 'value', 'color', 'icon', 'collapsed', 'records', 'meta', 'total'], true);
     }
 
     public function offsetGet(mixed $offset): mixed
@@ -112,6 +150,7 @@ final readonly class KanbanColumn implements ArrayAccess
             'collapsed' => $this->collapsed,
             'records' => $this->records,
             'meta' => $this->meta,
+            'total' => $this->total(),
             default => null,
         };
     }

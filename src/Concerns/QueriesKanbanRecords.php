@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentKanban\Concerns;
 
+use Asignua\FilamentKanban\Support\KanbanColumn;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use LogicException;
 
@@ -33,8 +35,23 @@ trait QueriesKanbanRecords
     /** Seconds a card keeps its "just updated" flash. */
     protected int $flashSeconds = 3;
 
+    /**
+     * Lazy columns: how many cards a column loads at first and with every "Show more". Null = load them all (the
+     * default, exactly the old behaviour). Per-column control: override recordsPerColumn().
+     */
+    protected ?int $recordsPerColumn = null;
+
     #[Url(as: 'search', except: '')]
     public string $search = '';
+
+    /**
+     * Lazy columns: how many cards of each column are loaded now, by column id. Only columns that were extended
+     * ("Show more", a card dropped in) appear here; the rest sit at their page size. Locked: the browser cannot set it.
+     *
+     * @var array<string, int>
+     */
+    #[Locked]
+    public array $kanbanColumnLimits = [];
 
     /**
      * @return class-string<Model>
@@ -135,6 +152,27 @@ trait QueriesKanbanRecords
     }
 
     /**
+     * Cards per page of one lazy column; null = the column loads all its cards.
+     * Override to paginate only some columns, e.g. the closed ones: `return in_array($column->id, ['won', 'lost'], true) ? 25 : null;`.
+     * Pagination works only through the built-in records() query: a board that overrides records() loads everything.
+     */
+    protected function recordsPerColumn(KanbanColumn $column): ?int
+    {
+        return $this->recordsPerColumn;
+    }
+
+    /**
+     * The search, filters and add-on narrowing applied to every card the board may show: no ordering, no eager loads.
+     * The one query that cards, lazy-column counts and add-on aggregates are all built from, so they always agree.
+     *
+     * @return Builder<Model>
+     */
+    protected function filteredRecordsQuery(): Builder
+    {
+        return $this->modifyRecordsQuery($this->applySearch($this->getEloquentQuery()));
+    }
+
+    /**
      * The visible cards. Overridable (mokhosh-compatible); an override replaces the search and the ordering too,
      * so prefer modifyRecordsQuery() unless you really build the collection by hand.
      *
@@ -142,8 +180,19 @@ trait QueriesKanbanRecords
      */
     protected function records(): Collection
     {
-        $query = $this->modifyRecordsQuery($this->applySearch($this->getEloquentQuery()))
-            ->with($this->recordRelations());
+        return $this->orderedRecordsQuery($this->filteredRecordsQuery())->get();
+    }
+
+    /**
+     * Eager loads and the card order (manual position, else the sortable scope, then the key) for a records query.
+     *
+     * @param Builder<Model> $query
+     *
+     * @return Builder<Model>
+     */
+    protected function orderedRecordsQuery(Builder $query): Builder
+    {
+        $query->with($this->recordRelations());
 
         $sort = static::sortAttribute();
 
@@ -155,7 +204,7 @@ trait QueriesKanbanRecords
 
         $key = $query->getModel()->getQualifiedKeyName();
 
-        return $query->orderBy($key)->get();
+        return $query->orderBy($key);
     }
 
     protected function findRecord(int|string $recordId): ?Model

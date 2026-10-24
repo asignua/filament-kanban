@@ -17,4 +17,6 @@ return [
     'transition_heading' => ':from → :to',
     'transition_submit' => 'Перемістити',
     'card_locked' => 'Картку заблоковано, її не можна переміщувати.',
+    'show_more' => 'Показати ще :count',
+    'hidden_count' => '(:hidden приховано)',
 ];

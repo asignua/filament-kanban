@@ -17,4 +17,6 @@ return [
     'transition_heading' => ':from → :to',
     'transition_submit' => 'Verschieben',
     'card_locked' => 'Diese Karte ist gesperrt und kann nicht verschoben werden.',
+    'show_more' => ':count weitere anzeigen',
+    'hidden_count' => '(:hidden ausgeblendet)',
 ];

@@ -50,7 +50,10 @@ A `string` is escaped, an `Htmlable` is printed as is. Ship your CSS as a Filame
   **never put UI filters here** - a filter would hide cards from the renumbering and they would collide with visible ones.
 - `modifyRecordsQuery(Builder)`: search, filters, "only mine". This is where a table-filter integration plugs in.
 - `recordRelations()`: eager loads.
-- `records()`: replaces the whole fetch (search and ordering too). Prefer the three above.
+- `records()`: replaces the whole fetch (search and ordering too). Prefer the three above. Overriding it turns lazy columns off.
+- `recordsPerColumn(KanbanColumn)`: page size of a lazy column (null = all). `filteredRecordsQuery()` is the search + filters
+  query everything is built from; `columnRecordsQuery($column)` adds the column's status (use it for aggregates over the
+  whole column, not the loaded page); `KanbanColumn::total()` / `hiddenCount()` tell how many cards the column holds.
 
 ## Moving
 
