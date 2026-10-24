@@ -13,6 +13,25 @@ same class names and hooks so a board moves over by swapping a namespace.
 No JavaScript to build, no Tailwind safelist: drag and drop uses the SortableJS Filament already ships, the stylesheet is
 namespaced (`.fi-kanban*`) and uses Filament's own colour variables, so it follows your panel colours and dark mode.
 
+## Free or Pro?
+
+| | [Kanban](https://github.com/asignua/filament-kanban) (free, MIT) | [Kanban Pro](https://github.com/asignua/filament-kanban-pro-docs) (€69 / €169) |
+| --- | :---: | :---: |
+| Board from an enum or from database rows, any Eloquent model (int / UUID / ULID) | ✓ | ✓ |
+| Drag and drop that keeps the places of cards hidden by search or filters | ✓ | ✓ |
+| Ask before a move (modal fields), policy and `canMove()` authorization | ✓ | ✓ |
+| Search box, foldable columns, edit modal, events, mokhosh-compatible API | ✓ | ✓ |
+| Swimlanes (by owner, priority, any attribute) | | ✓ |
+| WIP limits, soft or hard | | ✓ |
+| Transition rules: allow-list, required fields on entering a column | | ✓ |
+| Column totals per currency, stale and overdue badges | | ✓ |
+| Several boards as tabs, Mine / All scope toggles | | ✓ |
+| Any Filament table filter on the board | | ✓ |
+| Workflow designer: steps, transitions and automations edited in the panel, journal, webhooks | | ✓ |
+
+Kanban Pro is an add-on: it requires the free package and builds on its documented extension points, so a board
+upgrades without rewriting.
+
 ## Screenshots
 
 A board with enum columns, a search box, a locked card with its badge and a folded "Done" column:
