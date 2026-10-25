@@ -237,8 +237,9 @@ Good to know:
   with `where status = column` and a `limit`; the totals are one grouped `count(*)`. No window functions, so it runs on
   MySQL, MariaDB, PostgreSQL and SQLite.
 - Dragging works as with a search: cards that are not loaded keep their places. A card dropped into a lazy column is
-  placed among the loaded cards (the unloaded tail moves one place down) and the column's page grows by one, so nothing
-  that was on screen disappears.
+  placed right behind the last loaded card (the column is renumbered in its stored order in a few bulk updates, so tied or
+  empty positions are fine) and the column's page grows by one, so nothing that was on screen disappears. Changing the
+  search starts the pages again from the first one.
 - **Overriding `records()` switches lazy columns off**: that method returns every card at once, so there is nothing to
   cut a page from. Use `modifyRecordsQuery()` / `recordRelations()` for narrowing instead.
 - An add-on that sums or counts a column must use `$column->total()` / `columnRecordsQuery($column)`, not the loaded

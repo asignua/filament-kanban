@@ -10,6 +10,8 @@ use Asignua\FilamentKanban\Tests\Fixtures\LazyTaskBoard;
 use Asignua\FilamentKanban\Tests\TestCase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionMethod;
 use Workbench\App\Enums\TaskStatus;
 use Workbench\App\Filament\Pages\TaskBoard;
 use Workbench\App\Models\Task;
@@ -214,5 +216,107 @@ class LazyColumnsTest extends TestCase
 
         $this->assertSame(3, $this->column($component, 'todo')->total());
         $this->assertSame(1, $this->column($component, 'doing')->total());
+    }
+
+    /**
+     * @param list<int|null> $positions
+     *
+     * @return list<Task>
+     */
+    private function cardsAt(array $positions): array
+    {
+        $cards = [];
+
+        foreach ($positions as $i => $position) {
+            $cards[] = Task::create(['title' => 'C'.($i + 1), 'status' => 'todo', 'position' => $position]);
+        }
+
+        return $cards;
+    }
+
+    /**
+     * The stored order of the column: explicit ordering, so a database's NULL rule cannot hide a bug.
+     *
+     * @return list<string>
+     */
+    private function storedTitles(string $status = 'todo'): array
+    {
+        return Task::query()
+            ->where('status', $status)
+            ->orderByRaw('position is null desc')
+            ->orderBy('position')
+            ->orderBy('id')
+            ->pluck('title')
+            ->all();
+    }
+
+    /**
+     * @return array<string, list<int|null>>
+     */
+    public static function positionShapes(): array
+    {
+        return [
+            'distinct' => [[1, 2, 3, 4, 5]],
+            'all tied at zero' => [[0, 0, 0, 0, 0]],
+            'partly tied' => [[1, 2, 2, 3, 4]],
+            'all null' => [[null, null, null, null, null]],
+            'some null' => [[null, 1, null, 2, 2]],
+        ];
+    }
+
+    /**
+     * @param list<int|null> $positions
+     */
+    #[DataProvider('positionShapes')]
+    public function test_a_drop_between_loaded_cards_never_pushes_a_loaded_card_behind_the_unloaded_tail(array $positions): void
+    {
+        $this->cardsAt($positions);
+        $moved = Task::create(['title' => 'X', 'status' => 'doing', 'position' => 9]);
+        $before = $this->storedTitles();
+
+        $component = Livewire::test(LazyTaskBoard::class);
+        $loaded = $this->column($component, 'todo')->records;
+        $this->assertSame(array_slice($before, 0, 2), $loaded->pluck('title')->all());
+
+        // Between the two loaded cards.
+        $component->call('statusChanged', $moved->id, 'todo', [], [$loaded[0]->id, $moved->id, $loaded[1]->id]);
+
+        $this->assertSame([$before[0], 'X', $before[1], ...array_slice($before, 2)], $this->storedTitles());
+        $this->assertSame(3, $component->get('kanbanColumnLimits')['todo']);
+        $this->assertSame([1, 2, 3, 4, 5, 6], Task::query()->where('status', 'todo')->orderBy('position')->pluck('position')->all());
+    }
+
+    public function test_a_large_tied_column_is_renumbered_in_bulk(): void
+    {
+        $now = now();
+        Task::query()->insert(array_map(
+            fn (int $i): array => ['title' => 'T'.$i, 'status' => 'todo', 'position' => 0, 'locked' => false, 'created_at' => $now, 'updated_at' => $now],
+            range(1, 1200),
+        ));
+        $moved = Task::create(['title' => 'X', 'status' => 'doing', 'position' => 1]);
+        $first = Task::query()->where('title', 'T1')->value('id');
+
+        DB::enableQueryLog();
+        Livewire::test(LazyTaskBoard::class)->call('statusChanged', $moved->id, 'todo', [], [$first, $moved->id]);
+        $updates = collect(DB::getQueryLog())->filter(fn (array $q): bool => str_starts_with(strtolower($q['query']), 'update "tasks"'))->count();
+
+        $this->assertLessThan(10, $updates);
+        $this->assertSame(['T1', 'X', 'T2'], array_slice($this->storedTitles(), 0, 3));
+    }
+
+    public function test_a_boolean_status_column_keeps_its_total(): void
+    {
+        $this->assertSame(0, (new ReflectionMethod(LazyTaskBoard::class, 'statusScalar'))->invoke(new LazyTaskBoard, new KanbanColumn('off', 'Off', false)));
+    }
+
+    public function test_the_loaded_pages_reset_when_the_search_changes(): void
+    {
+        $this->cards('todo', 5);
+
+        $component = Livewire::test(LazyTaskBoard::class)->call('loadMoreRecords', 'todo');
+        $this->assertNotSame([], $component->get('kanbanColumnLimits'));
+
+        $component->set('search', 'Card');
+        $this->assertSame([], $component->get('kanbanColumnLimits'));
     }
 }

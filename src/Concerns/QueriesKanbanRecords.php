@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Asignua\FilamentKanban\Concerns;
 
 use Asignua\FilamentKanban\Support\KanbanColumn;
+use Asignua\FilamentKanban\Support\PositionWriter;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -43,6 +44,14 @@ trait QueriesKanbanRecords
 
     #[Url(as: 'search', except: '')]
     public string $search = '';
+
+    /**
+     * A new search is a new set of cards: lazy columns start again from their first page.
+     */
+    public function updatedSearch(): void
+    {
+        $this->resetColumnLimits();
+    }
 
     /**
      * Lazy columns: how many cards of each column are loaded now, by column id. Only columns that were extended
@@ -197,7 +206,7 @@ trait QueriesKanbanRecords
         $sort = static::sortAttribute();
 
         if ($sort !== null) {
-            $query->orderBy($query->getModel()->qualifyColumn($sort));
+            PositionWriter::orderByPosition($query, $query->getModel()->qualifyColumn($sort));
         } elseif (method_exists(static::kanbanModel(), 'scopeOrdered')) {
             $query->scopes(['ordered']);
         }

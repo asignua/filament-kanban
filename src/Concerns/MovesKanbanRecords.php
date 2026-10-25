@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Asignua\FilamentKanban\Concerns;
 
 use Asignua\FilamentKanban\Events\KanbanRecordMoved;
-use Asignua\FilamentKanban\Support\KanbanColumn;
 use Asignua\FilamentKanban\Support\KanbanGate;
 use Asignua\FilamentKanban\Support\PositionWriter;
 use Filament\Actions\Action;
@@ -24,6 +23,9 @@ use Livewire\Attributes\On;
  */
 trait MovesKanbanRecords
 {
+    /** Key of the card a move is writing now (set by moveRecord()); persistOrder() places it inside a lazy column. */
+    protected int|string|null $kanbanMovedKey = null;
+
     /** @var array<string, mixed> Answers of the transition modal while a move is being written. */
     protected array $kanbanTransitionData = [];
 
@@ -143,67 +145,12 @@ trait MovesKanbanRecords
                 ->where($model->qualifyColumn($model->getKeyName()), '!=', $record->getKey())
                 ->max($model->qualifyColumn($sort));
 
-            $position = (is_numeric($max) ? (int) $max : 0) + 1;
-
-            // Lazy column: the cards that are not loaded form the tail of the column, so the dropped card must land
-            // among the loaded ones. Open a gap right after the last loaded card (pushing the tail one place down)
-            // instead of starting at the bottom, where it would trade slots with the loaded cards and send the last
-            // of them behind the unloaded tail.
-            if ($this->columnPageSize($column) !== null) {
-                $position = $this->openGapAfterLoaded($column, $record, $sort, $toOrderedIds) ?? $position;
-            }
-
-            $record->setAttribute($sort, $position);
+            $record->setAttribute($sort, (is_numeric($max) ? (int) $max : 0) + 1);
         }
 
         $record->save();
 
         $this->persistOrder($status, $toOrderedIds);
-    }
-
-    /**
-     * Makes room for a card dropped into a lazy column: moves every card positioned after the last loaded card one
-     * place down and returns the free position right after it. Null = nothing to anchor on (no loaded card named).
-     *
-     * @param array<int, mixed> $loadedIds Keys of the loaded cards of the column as the browser saw them.
-     */
-    private function openGapAfterLoaded(KanbanColumn $column, Model $moved, string $sort, array $loadedIds): ?int
-    {
-        $query = $this->getEloquentQuery();
-        $model = $query->getModel();
-        $key = $model->qualifyColumn($model->getKeyName());
-        $sortColumn = $model->qualifyColumn($sort);
-
-        $others = array_values(array_filter(
-            $loadedIds,
-            static fn (mixed $id): bool => (is_int($id) || is_string($id)) && (string) $id !== (string) $moved->getKey(),
-        ));
-
-        if ($others === []) {
-            return null;
-        }
-
-        $last = (clone $query)
-            ->reorder()
-            ->where($model->qualifyColumn(static::$recordStatusAttribute), $this->statusScalar($column))
-            ->whereIn($key, $others)
-            ->max($sortColumn);
-
-        if (!is_numeric($last)) {
-            return null;
-        }
-
-        $last = (int) $last;
-
-        $query
-            ->reorder()
-            ->where($model->qualifyColumn(static::$recordStatusAttribute), $this->statusScalar($column))
-            ->where($key, '!=', $moved->getKey())
-            ->where($sortColumn, '>', $last)
-            ->toBase()
-            ->increment($sort);
-
-        return $last + 1;
     }
 
     /**
@@ -234,7 +181,11 @@ trait MovesKanbanRecords
         $query->where($query->getModel()->qualifyColumn(static::$recordStatusAttribute), $column->value);
 
         // Ids from the browser are intersected with this column inside PositionWriter: foreign ids are ignored.
-        PositionWriter::apply($query, $sort, $orderedIds);
+        // A card dropped into a lazy column goes right behind the last loaded card (see PositionWriter::apply()). It
+        // is done here, in the one place every write path ends in (the default move and a custom write hook alike).
+        $moved = $this->kanbanMovedKey !== null && $this->columnPageSize($column) !== null ? $this->kanbanMovedKey : null;
+
+        PositionWriter::apply($query, $sort, $orderedIds, $moved);
     }
 
     /**
@@ -388,6 +339,7 @@ trait MovesKanbanRecords
 
         $previous = $this->kanbanTransitionData;
         $this->kanbanTransitionData = $data;
+        $this->kanbanMovedKey = $key;
 
         try {
             DB::transaction(function () use ($key, $from, $to, $fromOrderedIds, $toOrderedIds, $data): void {
@@ -395,6 +347,7 @@ trait MovesKanbanRecords
             });
         } finally {
             $this->kanbanTransitionData = $previous;
+            $this->kanbanMovedKey = null;
         }
 
         $this->extendLazyColumnAfterDrop($to);

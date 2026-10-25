@@ -5,7 +5,7 @@ All notable changes to `asignua/filament-kanban` are documented here.
 ## Unreleased
 
 - Lazy columns (opt-in): `protected ?int $recordsPerColumn` or `recordsPerColumn(KanbanColumn)` makes a column load one page of cards with a "Show more" button (`loadMoreRecords()`). The header badge shows the column's total (search applied). Default `null` loads everything as before; a board that overrides `records()` is never paged.
-- Dropping a card into a lazy column places it among the loaded cards and widens the page by one; unloaded cards keep their places.
+- Dropping a card into a lazy column places it right behind the last loaded card (works with tied / NULL positions and custom write hooks) and widens the page by one. `PositionWriter` renumbers with bulk CASE updates and orders NULL positions first on every database.
 - New seams: `filteredRecordsQuery()`, `columnRecordsQuery()`, `KanbanColumn::total()` / `hiddenCount()` / `withTotal()`. Translation keys `show_more`, `hidden_count`.
 
 ## v1.0.1 - 2026-10-12

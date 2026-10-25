@@ -124,6 +124,14 @@ trait ResolvesKanbanColumns
     }
 
     /**
+     * Back to the first page of every lazy column (the set of cards changed: a search, a filter, another tab).
+     */
+    protected function resetColumnLimits(): void
+    {
+        $this->kanbanColumnLimits = [];
+    }
+
+    /**
      * "Show more" of one lazy column: one more page. A column that does not paginate, or does not exist, is refused.
      */
     public function loadMoreRecords(string $columnId): void
@@ -219,12 +227,22 @@ trait ResolvesKanbanColumns
         $query = $this->filteredRecordsQuery()->reorder();
         $status = $query->getModel()->qualifyColumn(static::$recordStatusAttribute);
 
+        // Counted over a sub-select, so a modifyRecordsQuery() that adds groups, havings or selects cannot corrupt
+        // the count: the inner query only has to yield one row per card.
+        $cards = $query->toBase()->select($status.' as kanban_status');
+        $rows = $query->getModel()->getConnection()->query()
+            ->fromSub($cards, 'kanban_cards')
+            ->select('kanban_status')
+            ->selectRaw('count(*) as kanban_total')
+            ->groupBy('kanban_status')
+            ->get();
+
         $counts = [];
 
-        foreach ($query->toBase()->select($status.' as kanban_status')->selectRaw('count(*) as kanban_total')->groupBy($status)->get() as $row) {
+        foreach ($rows as $row) {
             $value = $row->kanban_status ?? '';
             $total = $row->kanban_total ?? 0;
-            $counts[is_scalar($value) ? (string) $value : ''] = is_numeric($total) ? (int) $total : 0;
+            $counts[is_bool($value) ? (string) (int) $value : (is_scalar($value) ? (string) $value : '')] = is_numeric($total) ? (int) $total : 0;
         }
 
         return $counts;
@@ -240,6 +258,8 @@ trait ResolvesKanbanColumns
         return match (true) {
             $value instanceof BackedEnum => $value->value,
             $value instanceof UnitEnum => $value->name,
+            // false/true are stored as 0/1; (string) false would be '' and match nothing.
+            is_bool($value) => (int) $value,
             is_int($value) => $value,
             is_scalar($value) => (string) $value,
             default => '',
