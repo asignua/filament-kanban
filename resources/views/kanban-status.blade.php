@@ -1,4 +1,7 @@
+@use('Illuminate\Support\Js')
+
 @php($accent = $column->colorName())
+@php($moreTarget = 'loadMoreRecords('.Js::from($column->id).')')
 
 <section
     wire:key="kanban-column-{{ $column->id }}"
@@ -29,7 +32,7 @@
             >
                 <span>{{ __('filament-kanban::filament-kanban.show_more', ['count' => min($this->columnPageSize($column) ?? $column->hiddenCount(), $column->hiddenCount())]) }}</span>
                 <span class="fi-kanban-more-hidden">{{ __('filament-kanban::filament-kanban.hidden_count', ['hidden' => $column->hiddenCount()]) }}</span>
-                <x-filament::loading-indicator wire:loading wire:target="loadMoreRecords(@js($column->id))" class="fi-kanban-more-spinner" />
+                <x-filament::loading-indicator wire:loading wire:target="{{ $moreTarget }}" class="fi-kanban-more-spinner" />
             </button>
         </div>
     @endif

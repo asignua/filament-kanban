@@ -118,6 +118,18 @@ class LazyColumnsTest extends TestCase
         Livewire::test(LazyTaskBoard::class)->assertSee(__('filament-kanban::filament-kanban.show_more', ['count' => 1]));
     }
 
+    public function test_the_show_more_spinner_target_is_a_compiled_expression(): void
+    {
+        $this->cards('todo', 3);
+
+        // `@js()` inside a component tag is not compiled by Blade and reached the browser as a literal
+        // wire:target ("Alpine Expression Error: Invalid or unexpected token").
+        $html = Livewire::test(LazyTaskBoard::class)->html();
+
+        $this->assertStringNotContainsString('@js(', $html);
+        $this->assertStringContainsString('wire:target="loadMoreRecords(&#039;todo&#039;)"', $html);
+    }
+
     public function test_search_narrows_the_loaded_cards_and_the_totals(): void
     {
         $this->cards('todo', 4, 'Alpha');
