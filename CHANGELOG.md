@@ -2,6 +2,9 @@
 
 All notable changes to `asignua/filament-kanban` are documented here.
 
+## v1.1.1 - 2026-11-01
+- Fix: the "Show more" spinner of a lazy column sent `loadMoreRecords(@js(...))` to the browser uncompiled, so Alpine logged an expression error on every click. Verified on Filament 5.11.0.
+
 ## v1.1.0 - 2026-10-25
 - Lazy columns (opt-in): `protected ?int $recordsPerColumn` or `recordsPerColumn(KanbanColumn)` makes a column load one page of cards with a "Show more" button (`loadMoreRecords()`). The header badge shows the column's total (search applied). Default `null` loads everything as before; a board that overrides `records()` is never paged.
 - Dropping a card into a lazy column places it right behind the last loaded card (works with tied / NULL positions and custom write hooks) and widens the page by one. `PositionWriter` renumbers with bulk CASE updates and orders NULL positions first on every database.
