@@ -384,6 +384,15 @@ log in at `/admin` as `emma@example.com` / `password`.
 
 See [CHANGELOG.md](CHANGELOG.md).
 
+## More plugins by asign
+
+- [Kanban Pro](https://filamentphp.com/plugins/asign-kanban-pro) — swimlanes, WIP limits and workflow rules for boards
+- [Record Lock](https://filamentphp.com/plugins/asign-record-lock) — stop two people editing the same record
+- [Themes](https://filamentphp.com/plugins/asign-themes) — per-user and per-panel colour themes
+- [Activity Log Plus](https://filamentphp.com/plugins/asign-activity-log-plus) — audit trail and history for models
+
+All plugins: <https://filamentphp.com/plugins?q=asign>
+
 ## License
 
 The MIT License (MIT). See [LICENSE.md](LICENSE.md).
