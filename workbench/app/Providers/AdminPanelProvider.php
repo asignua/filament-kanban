@@ -17,6 +17,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Workbench\App\Filament\Pages\BigBoard;
 use Workbench\App\Filament\Pages\DealBoard;
 use Workbench\App\Filament\Pages\NoteBoard;
 use Workbench\App\Filament\Pages\TaskBoard;
@@ -33,7 +34,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->plugin(KanbanPlugin::make())
-            ->pages([TaskBoard::class, TicketBoard::class, DealBoard::class, NoteBoard::class])
+            ->pages([BigBoard::class, TaskBoard::class, TicketBoard::class, DealBoard::class, NoteBoard::class])
             ->resources([TaskResource::class])
             ->middleware([
                 EncryptCookies::class,

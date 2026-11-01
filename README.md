@@ -24,13 +24,13 @@ namespaced (`.fi-kanban*`) and uses Filament's own colour variables, so it follo
 | Ask before a move (modal fields), policy and `canMove()` authorization | ✓ | ✓ |
 | Lazy columns: load more cards per column (opt-in) | ✓ | ✓ |
 | Search box, foldable columns, edit modal, events, mokhosh-compatible API | ✓ | ✓ |
-| Swimlanes (by owner, priority, any attribute) | | ✓ |
-| WIP limits, soft or hard | | ✓ |
-| Transition rules: allow-list, required fields on entering a column | | ✓ |
-| Column totals per currency, stale and overdue badges | | ✓ |
-| Several boards as tabs, Mine / All scope toggles | | ✓ |
-| Any Filament table filter on the board | | ✓ |
 | Workflow designer: steps, transitions and automations edited in the panel, journal, webhooks | | ✓ |
+| Transition rules: allow-list per step, required fields on entering a column | | ✓ |
+| WIP limits, soft or hard | | ✓ |
+| Column totals per currency, stale and overdue badges | | ✓ |
+| Several boards as tabs, each with its own scope and limits; Mine / All toggles | | ✓ |
+| Swimlanes (by owner, priority, any attribute) | | ✓ |
+| Any Filament table filter on the board | | ✓ |
 
 Kanban Pro is an add-on: it requires the free package and builds on its documented extension points, so a board
 upgrades without rewriting.
@@ -309,6 +309,11 @@ There is no config file: everything is a property or an overridable method on th
 
 ## Migrating from mokhosh/filament-kanban
 
+`mokhosh/filament-kanban` stops at Filament 3 (its issue "Support filament v4" is still open). This package keeps its class
+names, properties and hook signatures on purpose, so a board moves over by changing a namespace and fixing what Filament 4/5
+itself changed. A test (`MokhoshMigrationTest`) runs a board written exactly as their README shows it - public hooks,
+a hand-built `records()` and `statuses()` - against this package.
+
 1. `composer remove mokhosh/filament-kanban && composer require asignua/filament-kanban`.
 2. Swap the namespaces: `Mokhosh\FilamentKanban\Pages\KanbanBoard` -> `Asignua\FilamentKanban\Pages\KanbanBoard`,
    `Mokhosh\FilamentKanban\Concerns\IsKanbanStatus` -> `Asignua\FilamentKanban\Concerns\IsKanbanStatus`.
@@ -319,13 +324,38 @@ There is no config file: everything is a property or an overridable method on th
 5. Delete a published `kanban-*` view unless you changed it on purpose; the old markup uses Tailwind classes your panel
    theme does not compile.
 
-What stays the same: `$model`, `$statusEnum`, `$recordTitleAttribute`, `$recordStatusAttribute`, `statuses()` returning
-`id`/`title` arrays, `records()`, `getEloquentQuery()`, `onStatusChanged()` / `onSortChanged()` with the same signatures,
-`getEditModalFormSchema()`, `editRecord()`, the `$editModal*` properties and `$disableEditModal`, the five `*View` properties,
-the Livewire events `status-changed` / `sort-changed`, `make:kanban`, `filament-kanban:install`, and views reading
-`$statuses` / `$status['records']`.
+### API mapping
 
-What differs:
+| mokhosh/filament-kanban | filament-kanban | Notes |
+| --- | --- | --- |
+| `Mokhosh\FilamentKanban\Pages\KanbanBoard` | `Asignua\FilamentKanban\Pages\KanbanBoard` | Also `Pages\KanbanResourcePage` for a page on a resource, or the trait `Concerns\InteractsWithKanban` on any page. |
+| `protected static string $model` | same | |
+| `protected static string $statusEnum` + `IsKanbanStatus` on the enum | same | `kanbanCases()` and `getTitle()` work as before; `HasLabel` / `HasColor` / `HasIcon` are honoured too. An enum's own static `statuses()` is still read. |
+| `protected static string $recordTitleAttribute` / `$recordStatusAttribute` | same | |
+| `statuses(): Collection` of `['id' => ..., 'title' => ...]` | same | Extra keys: `value`, `color`, `icon`, `collapsed`, `meta`. `id` is always a string. |
+| `records(): Collection` | same, but prefer `modifyRecordsQuery(Builder)` | Overriding `records()` replaces search, ordering and lazy columns. |
+| `getEloquentQuery()` | same | Keep UI filters out of it (they belong in `modifyRecordsQuery()`): it also finds the whole column when positions are saved. |
+| `onStatusChanged($recordId, $status, $fromOrderedIds, $toOrderedIds)` | same signature, **protected** | Browser entry point is `statusChanged()`, which authorizes first. A `public` override still works but is callable from the browser. |
+| `onSortChanged($recordId, $status, $orderedIds)` | same signature, **protected** | Entry point `sortChanged()`. |
+| Livewire events `status-changed` / `sort-changed` | same | |
+| Spatie `eloquent-sortable` (`ordered()`, `setNewOrder()`) | still works when no `$recordSortAttribute` is set | Or name a column: `$recordSortAttribute = 'position'`; only the visible cards change places. |
+| `$disableEditModal` | same | A card with `recordUrl()` links instead of opening the modal. |
+| `getEditModalFormSchema($recordId)` | same | Now feeds a Filament action modal (`kanbanEdit`), so the schema is an ordinary action schema. |
+| `editRecord($recordId, $data, $state)` | same | |
+| `$editModalTitle`, `$editModalWidth`, `$editModalSlideOver`, `$editModalSaveButtonLabel`, `$editModalCancelButtonLabel` | same | |
+| `$headerView`, `$recordView`, `$statusView`, `$scriptsView`, `$view` | same | New: `$toolbarView`. Views still read `$statuses` / `$status['records']` and `$record` as a Model. |
+| `make:kanban`, `filament-kanban:install`, tag `filament-kanban-views` | same | |
+| `HasRecentUpdateIndication` (deprecated) | built in | The flash is automatic (`$flashSeconds`). |
+| `TestsFilamentKanban` testing macros | not ported | Test with `Livewire::test(Board::class)->call('statusChanged', ...)`. |
+| - | `canMove()`, `validateMove()`, `isRecordDraggable()`, `canEditRecord()` | New: authorization through the model policy and your own rules. |
+| - | `columnTransitionSchema()` / `onRecordTransitioned()` | New: ask a question (lost reason) before a move. |
+| - | `$recordsPerColumn` | New: lazy columns with "Show more" for columns with hundreds of cards. |
+| - | `recordBadges()`, `recordExtras()`, `recordDescription()`, `recordUrl()`, `recordRelations()`, search, folding | New. |
+
+There is no compatibility trait: the names are already the same, so a shim would only add a second way to write the
+same board.
+
+What differs, in short:
 
 - **The hooks are protected.** In mokhosh `onStatusChanged()` is public, which means any user can call it from the browser
   console and skip your checks. Here the browser calls `statusChanged()` / `sortChanged()`, which authorize and validate, and
@@ -353,8 +383,8 @@ What differs:
 ## Extending
 
 Slots for toolbar, column headers, card badges and footers, column meta, query modification and before-move validation are
-documented in [docs/EXTENDING.md](docs/EXTENDING.md). The paid add-on `asignua/filament-kanban-pro` (swimlanes, WIP limits,
-transition rules, column summaries, stale badges, boards as tabs, table-filter integration) is built only on these.
+documented in [docs/EXTENDING.md](docs/EXTENDING.md). The paid add-on `asignua/filament-kanban-pro` (workflow designer, transition rules, WIP limits,
+column totals, swimlanes, stale badges, boards as tabs, table-filter integration) is built only on these.
 
 ## Translations
 
@@ -386,7 +416,7 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## More plugins by asign
 
-- [Kanban Pro](https://filamentphp.com/plugins/asign-kanban-pro) — swimlanes, WIP limits and workflow rules for boards
+- [Kanban Pro](https://filamentphp.com/plugins/asign-kanban-pro) — workflow designer, transition rules, WIP limits and totals for boards (swimlanes, several boards as tabs)
 - [Record Lock](https://filamentphp.com/plugins/asign-record-lock) — stop two people editing the same record
 - [Themes](https://filamentphp.com/plugins/asign-themes) — per-user and per-panel colour themes
 - [Activity Log Plus](https://filamentphp.com/plugins/asign-activity-log-plus) — audit trail and history for models

@@ -3,6 +3,9 @@
 All notable changes to `asignua/filament-kanban` are documented here.
 
 ## v1.1.1 - 2026-11-01
+- Lighter cards: a card no longer renders a pair of Livewire morph markers for every optional part it does not use (one dynamic title tag instead of an `@if` chain, the lock hint and `data-locked` as echoes, description / badges / extras behind one condition). A 125-card board went from 89 KB to 66 KB of HTML (500 cards: 312 KB to 218 KB), and so did every Livewire update after a drag. The markup a card produces is the same. The snapshot never held the cards (about 1 KB at any size); `PageWeightTest` keeps it that way.
+- Docs: the migration section from `mokhosh/filament-kanban` now has a full API mapping table; `MokhoshMigrationTest` runs a board written as their README shows it (public hooks, hand-built `records()` / `statuses()`).
+- Docs: the Free-vs-Pro table leads with the workflow designer, transition rules, WIP limits, totals and several boards.
 - Fix: the "Show more" spinner of a lazy column sent `loadMoreRecords(@js(...))` to the browser uncompiled, so Alpine logged an expression error on every click. Verified on Filament 5.11.0.
 
 ## v1.1.0 - 2026-10-25
