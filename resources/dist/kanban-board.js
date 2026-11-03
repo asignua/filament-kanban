@@ -1,6 +1,9 @@
 // Alpine component of the Kanban board. Plain ES module, no build step: Filament loads it on demand (x-load).
 // Drag and drop is SortableJS, which Filament already ships as window.Sortable.
 export default function kanbanBoard({ storageKey, group, realtime = null }) {
+    // Kept out of the returned object on purpose: Alpine would wrap the pusher connection in a reactive proxy.
+    let unbindFallback = () => {}
+
     return {
         collapsed: {},
         dragging: false,
@@ -11,7 +14,16 @@ export default function kanbanBoard({ storageKey, group, realtime = null }) {
 
         init() {
             if (realtime !== null) {
-                window.addEventListener('kanban-board-changed', () => this.changed())
+                const onChanged = () => this.changed()
+
+                window.addEventListener('kanban-board-changed', onChanged)
+
+                const stopFallback = this.watchConnection()
+
+                unbindFallback = () => {
+                    window.removeEventListener('kanban-board-changed', onChanged)
+                    stopFallback()
+                }
             }
 
             try {
@@ -20,6 +32,75 @@ export default function kanbanBoard({ storageKey, group, realtime = null }) {
                 this.collapsed = saved !== null && typeof saved === 'object' ? saved : {}
             } catch (error) {
                 this.collapsed = {}
+            }
+        },
+
+        // Alpine calls this when the board leaves the page (wire:navigate): nothing may outlive it.
+        destroy() {
+            unbindFallback()
+            clearTimeout(this.timer)
+        },
+
+        // Weak polling fallback. pusher-js can give up for good after a few abrupt socket drops (a Reverb restart on
+        // every deploy): its state turns `failed` / `unavailable` and it never reconnects until a page reload.
+        // While that lasts, ask for a refresh every `realtime.fallback_poll` seconds (0 = off, hidden tab skipped).
+        // A return to `connected` after a drop does one catch-up: events sent during the outage were lost. The
+        // very first initialized -> connecting -> connected is not a drop. Returns the function that unbinds it all.
+        watchConnection() {
+            const seconds = Number(realtime?.fallback_poll ?? 0)
+
+            if (!(seconds > 0)) {
+                return () => {}
+            }
+
+            let connection = null
+            let poll = null
+            let wasDown = false
+
+            const stop = () => {
+                clearInterval(poll)
+                poll = null
+            }
+
+            const down = () => {
+                wasDown = true
+                poll ??= setInterval(() => {
+                    if (!document.hidden) {
+                        this.changed()
+                    }
+                }, seconds * 1000)
+            }
+
+            const onState = ({ current }) => {
+                if (current === 'failed' || current === 'unavailable') {
+                    down()
+                } else if (current === 'connected') {
+                    stop()
+
+                    if (wasDown) {
+                        wasDown = false
+                        this.changed()
+                    }
+                }
+            }
+
+            const bind = () => {
+                connection = window.Echo?.connector?.pusher?.connection ?? null
+
+                if (connection === null) {
+                    return
+                }
+
+                connection.bind('state_change', onState)
+                onState({ current: connection.state })
+            }
+
+            window.Echo ? bind() : window.addEventListener('EchoLoaded', bind, { once: true })
+
+            return () => {
+                stop()
+                connection?.unbind('state_change', onState)
+                window.removeEventListener('EchoLoaded', bind)
             }
         },
 

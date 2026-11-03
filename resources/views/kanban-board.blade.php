@@ -16,7 +16,7 @@
         x-data="kanbanBoard({
             storageKey: @js('filament-kanban.'.static::class),
             group: @js('filament-kanban-'.md5(static::class)),@if ($realtime)
-            realtime: @js(['debounce' => Realtime::debounce()]),@endif
+            realtime: @js(Realtime::boardOptions()),@endif
         })"
     >
         @include('filament-kanban::partials.realtime-notice')

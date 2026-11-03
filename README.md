@@ -347,9 +347,21 @@ php artisan install:broadcasting --reverb && php artisan reverb:start
 
 By default (`realtime.echo = 'plugin'`) the plugin brings Laravel Echo itself by reusing the one Filament already ships, configured
 from the broadcasting connection, and registers `/broadcasting/auth` if your app has not. Use `FILAMENT_KANBAN_ECHO=filament`
-(Filament's own `filament.broadcasting.echo`) or `host` (your bundle already loads `window.Echo`) to opt out. When the browser
-reaches the socket differently from PHP (Docker, nginx), set `FILAMENT_KANBAN_WS_HOST` / `_PORT` / `_SCHEME`; behind nginx proxy
-`/app/` to Reverb and leave them empty. `FILAMENT_KANBAN_BROADCAST_CONNECTION` publishes on a connection other than the default.
+(Filament's own `filament.broadcasting.echo`) or `host` (your bundle already loads `window.Echo`) to opt out. Behind nginx proxy `/app/` to Reverb and leave the address empty. `FILAMENT_KANBAN_BROADCAST_CONNECTION` publishes on a connection other than the default.
+
+**Where the browser connects (shared by all asign plugins).** Each field (host, port, scheme) is resolved on its own, first set value wins:
+
+1. `FILAMENT_KANBAN_WS_HOST` / `_PORT` / `_SCHEME` (this plugin only);
+2. Laravel's browser-side variables `VITE_REVERB_HOST` / `VITE_REVERB_PORT` / `VITE_REVERB_SCHEME` (written by `php artisan install:broadcasting --reverb`);
+3. Filament's own Echo config, `filament.broadcasting.echo` (`wsHost`, `wsPort` / `wssPort`, `forceTLS`);
+4. the page's own host, protocol and default port.
+
+Whichever plugin renders its hook first creates `window.Echo` for the whole page, so a plugin without its own address must not
+fall back to `localhost`: set `VITE_REVERB_*` once and every asign plugin on the site (chat, kanban, record lock) connects to the same place.
+
+If the socket dies for good (pusher-js gives up after a couple of abrupt drops, e.g. a Reverb restart on deploy) the board falls back to
+a refresh every `FILAMENT_KANBAN_FALLBACK_POLL` seconds (default 60, `0` = off), skipping hidden tabs, and catches up once when the
+connection returns.
 
 Changes your own code makes (a create or delete action on your board, a custom write hook) call
 `$this->broadcastKanbanChange($record->getKey(), KanbanBoardChanged::CREATED)`; from outside a board use

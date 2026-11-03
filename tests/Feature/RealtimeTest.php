@@ -208,6 +208,7 @@ class RealtimeTest extends TestCase
         $this->assertSame([Realtime::listener(TaskBoard::class) => 'onKanbanBoardChanged'], $this->listenersOf($on->instance()));
         $on->assertSee('fi-kanban-notice', false)
             ->assertSee('realtime:', false)
+            ->assertSee('fallback_poll', false)
             ->assertSee(__('filament-kanban::filament-kanban.board_changed'));
     }
 

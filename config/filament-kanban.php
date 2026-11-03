@@ -37,12 +37,15 @@ return [
         'connection' => env('FILAMENT_KANBAN_BROADCAST_CONNECTION'),
         'echo' => env('FILAMENT_KANBAN_ECHO', 'plugin'),
         'client' => [
-            'host' => env('FILAMENT_KANBAN_WS_HOST'),
-            'port' => env('FILAMENT_KANBAN_WS_PORT'),
-            'scheme' => env('FILAMENT_KANBAN_WS_SCHEME'),
+            'host' => env('FILAMENT_KANBAN_WS_HOST', env('VITE_REVERB_HOST')),
+            'port' => env('FILAMENT_KANBAN_WS_PORT', env('VITE_REVERB_PORT')),
+            'scheme' => env('FILAMENT_KANBAN_WS_SCHEME', env('VITE_REVERB_SCHEME')),
         ],
         'register_auth_route' => true,
         'debounce' => 500,
+        // Seconds between refreshes while the browser's websocket has given up for good (pusher-js `failed` after a
+        // Reverb restart). 0 = off.
+        'fallback_poll' => env('FILAMENT_KANBAN_FALLBACK_POLL', 60),
     ],
 
 ];
