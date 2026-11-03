@@ -19,14 +19,7 @@
             realtime: @js(['debounce' => Realtime::debounce()]),@endif
         })"
     >
-        @if ($realtime)
-            <div class="fi-kanban-notice" role="status" x-cloak x-show="pending">
-                <span>{{ __('filament-kanban::filament-kanban.board_changed') }}</span>
-                <button type="button" class="fi-kanban-notice-button" x-on:click="refresh()">
-                    {{ __('filament-kanban::filament-kanban.board_refresh') }}
-                </button>
-            </div>
-        @endif
+        @include('filament-kanban::partials.realtime-notice')
 
         @include(static::$toolbarView)
 
