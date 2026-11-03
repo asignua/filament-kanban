@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentKanban\Concerns;
 
+use Asignua\FilamentKanban\Events\KanbanBoardChanged;
 use Asignua\FilamentKanban\Events\KanbanRecordMoved;
 use Asignua\FilamentKanban\Support\KanbanGate;
 use Asignua\FilamentKanban\Support\PositionWriter;
@@ -113,6 +114,8 @@ trait MovesKanbanRecords
         }
 
         DB::transaction(fn () => $this->onSortChanged($recordId, $status, $orderedIds));
+
+        $this->broadcastKanbanChange($recordId, KanbanBoardChanged::SORTED);
     }
 
     /**
@@ -356,6 +359,8 @@ trait MovesKanbanRecords
 
         event(new KanbanRecordMoved($moved, $from, $to, static::class, $data));
         $this->onRecordMoved($moved, $from, $to, $data);
+
+        $this->broadcastKanbanChange($moved->getKey(), KanbanBoardChanged::MOVED);
     }
 
     /**

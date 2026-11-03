@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentKanban\Concerns;
 
+use Asignua\FilamentKanban\Events\KanbanBoardChanged;
 use Asignua\FilamentKanban\Support\KanbanGate;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
@@ -65,6 +66,8 @@ trait EditsKanbanRecords
                 }
 
                 $this->editRecord($id, $data, $record->attributesToArray());
+
+                $this->broadcastKanbanChange($id, KanbanBoardChanged::UPDATED);
             });
     }
 

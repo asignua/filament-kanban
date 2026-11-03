@@ -1,11 +1,19 @@
 // Alpine component of the Kanban board. Plain ES module, no build step: Filament loads it on demand (x-load).
 // Drag and drop is SortableJS, which Filament already ships as window.Sortable.
-export default function kanbanBoard({ storageKey, group }) {
+export default function kanbanBoard({ storageKey, group, realtime = null }) {
     return {
         collapsed: {},
         dragging: false,
 
+        // Real-time (opt-in): a change made elsewhere is applied once the burst is over, or announced when it cannot be.
+        pending: false,
+        timer: null,
+
         init() {
+            if (realtime !== null) {
+                window.addEventListener('kanban-board-changed', () => this.changed())
+            }
+
             try {
                 const saved = JSON.parse(window.localStorage.getItem(storageKey) ?? '{}')
 
@@ -13,6 +21,34 @@ export default function kanbanBoard({ storageKey, group }) {
             } catch (error) {
                 this.collapsed = {}
             }
+        },
+
+        // Collect a burst of events into one refresh. Never re-render under the user's hands: during a drag or while a
+        // modal is open the board stays as it is and the "Board changed" notice offers the refresh instead.
+        changed() {
+            clearTimeout(this.timer)
+
+            this.timer = setTimeout(() => {
+                if (this.dragging || this.modalOpen()) {
+                    this.pending = true
+
+                    return
+                }
+
+                this.refresh()
+            }, realtime?.debounce ?? 500)
+        },
+
+        modalOpen() {
+            const mounted = this.$wire.mountedActions
+
+            return Array.isArray(mounted) ? mounted.length > 0 : false
+        },
+
+        refresh() {
+            clearTimeout(this.timer)
+            this.pending = false
+            this.$wire.$refresh()
         },
 
         isCollapsed(id, fallback) {

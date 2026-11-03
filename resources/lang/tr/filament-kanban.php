@@ -19,4 +19,6 @@ return [
     'card_locked' => 'Bu kart kilitli ve taşınamaz.',
     'show_more' => ':count tane daha göster',
     'hidden_count' => '(:hidden gizli)',
+    'board_changed' => 'Pano değişti. En son kartları görmek için yenileyin.',
+    'board_refresh' => 'Yenile',
 ];

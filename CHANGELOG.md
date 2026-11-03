@@ -2,6 +2,10 @@
 
 All notable changes to `asignua/filament-kanban` are documented here.
 
+## v1.2.0 - Unreleased
+- Real-time board updates (opt-in, `FILAMENT_KANBAN_REALTIME`; `null` = on when the broadcaster is reverb / pusher / ably). A move, reorder or edit broadcasts `Events\KanbanBoardChanged` (ids and change type only, `ShouldBroadcastNow` + after commit) on a private channel per board; other open copies refresh once per burst (500 ms debounce). The author's own copy ignores its echo. During a drag or while a modal is open the board is not re-rendered: a translatable "Board changed" notice with a Refresh button appears instead. The channel is authorised by the board's `canAccess()` plus an optional `Realtime::authorizeUsing()` rule. Echo can come from the plugin, Filament or the host (`realtime.echo`). Off, nothing changes: no event, no listener, no extra markup, no polling.
+- New config file `config/filament-kanban.php`; translation keys `board_changed`, `board_refresh`; `broadcastKanbanChange()` for your own create / delete actions.
+
 ## v1.1.1 - 2026-11-01
 - Lighter cards: a card no longer renders a pair of Livewire morph markers for every optional part it does not use (one dynamic title tag instead of an `@if` chain, the lock hint and `data-locked` as echoes, description / badges / extras behind one condition). A 125-card board went from 89 KB to 66 KB of HTML (500 cards: 312 KB to 218 KB), and so did every Livewire update after a drag. The markup a card produces is the same. The snapshot never held the cards (about 1 KB at any size); `PageWeightTest` keeps it that way.
 - Docs: the migration section from `mokhosh/filament-kanban` now has a full API mapping table; `MokhoshMigrationTest` runs a board written as their README shows it (public hooks, hand-built `records()` / `statuses()`).

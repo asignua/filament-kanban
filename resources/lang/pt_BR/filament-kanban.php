@@ -19,4 +19,6 @@ return [
     'card_locked' => 'Este cartão está bloqueado e não pode ser movido.',
     'show_more' => 'Mostrar mais :count',
     'hidden_count' => '(:hidden ocultos)',
+    'board_changed' => 'O quadro foi alterado. Atualize para ver os cartões mais recentes.',
+    'board_refresh' => 'Atualizar',
 ];

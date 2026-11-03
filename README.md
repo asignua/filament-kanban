@@ -301,11 +301,65 @@ also readable as `$column['title']`), the card view `$record` and `$column`.
 
 `Asignua\FilamentKanban\Events\KanbanRecordMoved` (`record`, `from`, `to`, `board`, `data`) is dispatched after a card changed
 column, and `onRecordMoved()` is called on the board. Reorders inside a column do not fire it.
+`KanbanBoardChanged` is the separate [real-time](#real-time) broadcast signal.
+
+## Real-time
+
+Off by default: today a card moved by a colleague shows up after a reload. Turn real-time on and every open copy of the board
+updates itself over a websocket (Laravel Reverb or any Pusher-compatible server).
+
+| `FILAMENT_KANBAN_REALTIME` | Behaviour |
+|---|---|
+| unset (`null`) | on when the default broadcaster is `reverb`, `pusher` or `ably` |
+| `true` | on |
+| `false` | nothing is broadcast, nothing is listened to, no polling: the board is exactly what it was without this feature |
+
+What is sent is a signal, not data: `Events\KanbanBoardChanged` carries the board class, the card key, the kind of change
+(`moved`, `sorted`, `updated`; `created` / `deleted` for your own code) and the id of the copy that caused it. Every other copy
+re-reads the cards itself, so policies, scopes and filters stay on the server. The event is broadcast right away
+(`ShouldBroadcastNow`, no queue worker needed) and only after the surrounding transaction committed.
+
+Each board has a private channel `filament-kanban.board.{Board-Class}`. Listening is authorised by the same rule that lets a user
+open the board (`canAccess()`: the model's `viewAny` policy by default). To narrow it further (say, a board per project):
+
+```php
+use Asignua\FilamentKanban\Support\Realtime;
+
+Realtime::authorizeUsing(fn ($user, string $board): bool => $user->canSeeProjectBoards());
+```
+
+**What the user sees.** A burst of changes is collected for 500 ms (`realtime.debounce`) into one refresh. Your own move does not
+echo back. While a card is being dragged or a modal (edit, transition) is open the board is never re-rendered under the user's
+hands: a small "Board changed. Refresh to see the latest cards." notice with a **Refresh** button appears instead (translatable,
+`board_changed` / `board_refresh`).
+
+Setup is the same as for the other asign plugins:
+
+```dotenv
+BROADCAST_CONNECTION=reverb
+FILAMENT_KANBAN_REALTIME=true
+```
+
+```bash
+php artisan install:broadcasting --reverb && php artisan reverb:start
+```
+
+By default (`realtime.echo = 'plugin'`) the plugin brings Laravel Echo itself by reusing the one Filament already ships, configured
+from the broadcasting connection, and registers `/broadcasting/auth` if your app has not. Use `FILAMENT_KANBAN_ECHO=filament`
+(Filament's own `filament.broadcasting.echo`) or `host` (your bundle already loads `window.Echo`) to opt out. When the browser
+reaches the socket differently from PHP (Docker, nginx), set `FILAMENT_KANBAN_WS_HOST` / `_PORT` / `_SCHEME`; behind nginx proxy
+`/app/` to Reverb and leave them empty. `FILAMENT_KANBAN_BROADCAST_CONNECTION` publishes on a connection other than the default.
+
+Changes your own code makes (a create or delete action on your board, a custom write hook) call
+`$this->broadcastKanbanChange($record->getKey(), KanbanBoardChanged::CREATED)`; from outside a board use
+`Realtime::changed(Board::class, $key, 'deleted')`. A board that defines its own `getListeners()` must merge
+`$this->kanbanRealtimeListeners()` into it.
 
 ## Configuration
 
-There is no config file: everything is a property or an overridable method on the board (see above and
-[docs/SPEC.md](docs/SPEC.md)). The translations are published with `--tag=filament-kanban-translations`.
+Behaviour is a property or an overridable method on the board (see above and [docs/SPEC.md](docs/SPEC.md)). The only config file,
+`config/filament-kanban.php` (`--tag=filament-kanban-config`), holds the [real-time](#real-time) settings. The translations are
+published with `--tag=filament-kanban-translations`.
 
 ## Migrating from mokhosh/filament-kanban
 

@@ -15,6 +15,7 @@ trait InteractsWithKanban
     use MovesKanbanRecords;
     use QueriesKanbanRecords;
     use ResolvesKanbanColumns;
+    use SyncsKanbanBoard;
 
     /**
      * @return array<string, mixed>

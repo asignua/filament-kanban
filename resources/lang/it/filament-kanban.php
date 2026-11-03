@@ -19,4 +19,6 @@ return [
     'card_locked' => 'Questa scheda è bloccata e non può essere spostata.',
     'show_more' => 'Mostra altre :count',
     'hidden_count' => '(:hidden nascoste)',
+    'board_changed' => 'La bacheca è cambiata. Aggiorna per vedere le ultime schede.',
+    'board_refresh' => 'Aggiorna',
 ];

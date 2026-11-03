@@ -19,4 +19,6 @@ return [
     'card_locked' => 'Esta tarjeta está bloqueada y no se puede mover.',
     'show_more' => 'Mostrar :count más',
     'hidden_count' => '(:hidden ocultas)',
+    'board_changed' => 'El tablero ha cambiado. Actualiza para ver las últimas tarjetas.',
+    'board_refresh' => 'Actualizar',
 ];

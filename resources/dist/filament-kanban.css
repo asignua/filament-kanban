@@ -317,4 +317,31 @@ body.fi-kanban-grabbing * {
         flex-basis: 4rem;
     }
 }
+
+/* Real-time: shown when the board changed elsewhere while a drag or a modal kept it from refreshing. */
+.fi-kanban-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    background-color: color-mix(in oklab, var(--primary-500) 12%, transparent);
+    color: var(--gray-900);
+}
+
+.dark .fi-kanban-notice {
+    color: var(--gray-100);
+}
+
+.fi-kanban-notice-button {
+    margin-inline-start: auto;
+    font-weight: 600;
+    color: var(--primary-600);
+}
+
+.dark .fi-kanban-notice-button {
+    color: var(--primary-400);
+}
 }

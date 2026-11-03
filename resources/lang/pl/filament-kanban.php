@@ -19,4 +19,6 @@ return [
     'card_locked' => 'Ta karta jest zablokowana i nie można jej przenieść.',
     'show_more' => 'Pokaż jeszcze :count',
     'hidden_count' => '(ukrytych: :hidden)',
+    'board_changed' => 'Tablica została zmieniona. Odśwież, aby zobaczyć najnowsze karty.',
+    'board_refresh' => 'Odśwież',
 ];

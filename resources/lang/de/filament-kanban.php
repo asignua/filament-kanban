@@ -19,4 +19,6 @@ return [
     'card_locked' => 'Diese Karte ist gesperrt und kann nicht verschoben werden.',
     'show_more' => ':count weitere anzeigen',
     'hidden_count' => '(:hidden ausgeblendet)',
+    'board_changed' => 'Das Board wurde geändert. Aktualisieren, um die neuesten Karten zu sehen.',
+    'board_refresh' => 'Aktualisieren',
 ];

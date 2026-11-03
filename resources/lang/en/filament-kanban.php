@@ -19,4 +19,6 @@ return [
     'card_locked' => 'This card is locked and cannot be moved.',
     'show_more' => 'Show :count more',
     'hidden_count' => '(:hidden hidden)',
+    'board_changed' => 'Board changed. Refresh to see the latest cards.',
+    'board_refresh' => 'Refresh',
 ];

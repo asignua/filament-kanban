@@ -19,4 +19,6 @@ return [
     'card_locked' => 'Deze kaart is vergrendeld en kan niet worden verplaatst.',
     'show_more' => 'Toon nog :count',
     'hidden_count' => '(:hidden verborgen)',
+    'board_changed' => 'Het bord is gewijzigd. Vernieuw om de nieuwste kaarten te zien.',
+    'board_refresh' => 'Vernieuwen',
 ];

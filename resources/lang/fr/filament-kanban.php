@@ -19,4 +19,6 @@ return [
     'card_locked' => 'Cette carte est verrouillée et ne peut pas être déplacée.',
     'show_more' => 'Afficher :count de plus',
     'hidden_count' => '(:hidden masquées)',
+    'board_changed' => 'Le tableau a changé. Actualisez pour voir les dernières cartes.',
+    'board_refresh' => 'Actualiser',
 ];
