@@ -24,6 +24,7 @@ namespaced (`.fi-kanban*`) and uses Filament's own colour variables, so it follo
 | Ask before a move (modal fields), policy and `canMove()` authorization | ✓ | ✓ |
 | Lazy columns: load more cards per column (opt-in) | ✓ | ✓ |
 | Search box, foldable columns, edit modal, events, mokhosh-compatible API | ✓ | ✓ |
+| Live updates over websockets: moves, reorders and edits of colleagues appear without a reload (opt-in) | ✓ | ✓ |
 | Workflow designer: steps, transitions and automations edited in the panel, journal, webhooks | | ✓ |
 | Transition rules: allow-list per step, required fields on entering a column | | ✓ |
 | WIP limits, soft or hard | | ✓ |

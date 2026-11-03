@@ -56,6 +56,6 @@ overrides slots; it never copies a view or the move pipeline.
 - Pagination or lazy loading of a column. A board loads its cards in one query; narrow it with
   `modifyRecordsQuery()`.
 - Creating cards from the board (a "new card" button): use a header action on your page.
-- Real-time collaboration (other users' moves appearing live): poll or wire your own Echo listener.
+- Real-time collaboration is opt-in since 1.2 (`Realtime`, `Events\KanbanBoardChanged`, `Concerns\SyncsKanbanBoard`; see README "Real-time"). A signal, not data: the cards are re-read per copy.
 - Bundling SortableJS: Filament already ships it as `window.Sortable`.
 - A Tailwind build step: the stylesheet is hand-written, namespaced `.fi-kanban*`.

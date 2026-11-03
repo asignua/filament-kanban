@@ -67,6 +67,8 @@ Order of events for a drop into another column:
 5. In one transaction: `onRecordTransitioned($recordId, $from, $to, $fromIds, $toIds, $data)`. Its default calls `onStatusChanged()` (status + order), then `onTransitionConfirmed()` when a form was shown. Override it when one write service needs the move and the modal's answers in the same call (`$data` is `[]` for a plain drag); `currentTransitionData()` returns the same answers inside `onStatusChanged()` too. Everything runs in one transaction, so a throw rolls back the move and the data.
 6. After commit: the `Events\KanbanRecordMoved` event and `onRecordMoved($record, $from, $to, $data)`.
 
+6a. Real-time (opt-in): `moveRecord()` and `sortChanged()` call `broadcastKanbanChange($key, KanbanBoardChanged::MOVED|SORTED)`, the edit modal sends `UPDATED`. A write of your own (a create or delete action, a custom hook) calls `$this->broadcastKanbanChange($key, KanbanBoardChanged::CREATED)` (inside a board) or `Realtime::changed(Board::class, $key, 'deleted', $origin)` (anywhere else: a job, a table action, an add-on). Both are no-ops while real-time is off and are delivered after the surrounding transaction commits. A board that defines its own `getListeners()` must merge `$this->kanbanRealtimeListeners()` into it, otherwise it never hears the others. See the README "Real-time".
+
 A reorder inside a column goes through `isRecordDraggable()`, `canMove($record, $s, $s)` and `onSortChanged()`.
 
 `onStatusChanged`, `onSortChanged`, `persistOrder` are protected: they write without asking. Keep them protected in
