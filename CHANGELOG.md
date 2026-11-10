@@ -5,6 +5,7 @@ All notable changes to `asignua/filament-kanban` are documented here.
 ## v1.3.0 - 2026-11-10
 
 - Requires Filament ^5.11.2; no deprecated Filament API was in use, so no code changes.
+- Laravel 13 deprecations: the workbench panel uses `PreventRequestForgery` (with a `VerifyCsrfToken` fallback for Laravel 12). Laravel 12 is still supported.
 
 ## v1.2.0 - 2026-11-03
 - Real-time board updates (opt-in, `FILAMENT_KANBAN_REALTIME`; `null` = on when the broadcaster is reverb / pusher / ably). A move, reorder or edit broadcasts `Events\KanbanBoardChanged` (ids and change type only, `ShouldBroadcastNow` + after commit) on a private channel per board; other open copies refresh once per burst (500 ms debounce). The author's own copy ignores its echo. During a drag or while a modal is open the board is not re-rendered: a translatable "Board changed" notice with a Refresh button appears instead. The channel is authorised by the board's `canAccess()` plus an optional `Realtime::authorizeUsing()` rule. Echo can come from the plugin, Filament or the host (`realtime.echo`). Off, nothing changes: no event, no listener, no extra markup, no polling.
