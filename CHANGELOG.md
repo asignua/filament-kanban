@@ -2,6 +2,10 @@
 
 All notable changes to `asignua/filament-kanban` are documented here.
 
+## v1.3.0 - 2026-11-10
+
+- Requires Filament ^5.11.2; no deprecated Filament API was in use, so no code changes.
+
 ## v1.2.0 - 2026-11-03
 - Real-time board updates (opt-in, `FILAMENT_KANBAN_REALTIME`; `null` = on when the broadcaster is reverb / pusher / ably). A move, reorder or edit broadcasts `Events\KanbanBoardChanged` (ids and change type only, `ShouldBroadcastNow` + after commit) on a private channel per board; other open copies refresh once per burst (500 ms debounce). The author's own copy ignores its echo. During a drag or while a modal is open the board is not re-rendered: a translatable "Board changed" notice with a Refresh button appears instead. The channel is authorised by the board's `canAccess()` plus an optional `Realtime::authorizeUsing()` rule. Echo can come from the plugin, Filament or the host (`realtime.echo`). Off, nothing changes: no event, no listener, no extra markup, no polling.
 - The browser's websocket address resolves per field: `FILAMENT_KANBAN_WS_HOST` / `_PORT` / `_SCHEME`, then Laravel's `VITE_REVERB_HOST` / `_PORT` / `_SCHEME`, then Filament's `filament.broadcasting.echo` (`wsHost`, `wsPort` / `wssPort`, `forceTLS`), then the page itself. Fixes Echo connecting to `localhost:80` when another asign plugin's hook ran first and this one had no client address.
