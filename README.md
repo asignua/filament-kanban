@@ -1,10 +1,13 @@
 # Filament Kanban
 
 [![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/asignua/filament-kanban.svg?style=flat-square)](https://packagist.org/packages/asignua/filament-kanban)
+[![Tests](https://img.shields.io/github/actions/workflow/status/asignua/filament-kanban/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/asignua/filament-kanban/actions/workflows/tests.yml)
+[![Total Downloads](https://img.shields.io/packagist/dt/asignua/filament-kanban.svg?style=flat-square)](https://packagist.org/packages/asignua/filament-kanban)
+[![License](https://img.shields.io/packagist/l/asignua/filament-kanban.svg?style=flat-square)](https://github.com/asignua/filament-kanban/blob/main/LICENSE.md)
+[![Plumb score](https://plumbphp.dev/badges/asignua/filament-kanban/composite.svg)](https://plumbphp.dev/asignua/filament-kanban)
 
 <img class="filament-hidden" src="https://raw.githubusercontent.com/asignua/filament-kanban/v1.1.0/art/cover.jpg" alt="Filament Kanban">
-
-[![Tests](https://img.shields.io/github/actions/workflow/status/asignua/filament-kanban/tests.yml?branch=main&label=tests)](https://github.com/asignua/filament-kanban/actions/workflows/tests.yml)
 
 A drag-and-drop Kanban board for Filament 5. Columns come from an enum or from database rows, cards are any Eloquent model
 (int, UUID or ULID keys), and the order is saved the way a real team board needs it: **cards hidden by a search or a filter
@@ -489,6 +492,8 @@ See [CHANGELOG.md](CHANGELOG.md).
 - [Activity Log Plus](https://filamentphp.com/plugins/asign-activity-log-plus) — audit trail and history for models
 
 All plugins: <https://filamentphp.com/plugins?q=asign>
+
+Catalogue of free and commercial plugins: <https://asign.tech/en/plugins>
 
 ## License
 
